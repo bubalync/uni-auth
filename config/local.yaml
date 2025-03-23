@@ -1,0 +1,23 @@
+env: "local"
+
+app:
+  name: "uni-auth"
+
+log:
+  level: "debug"
+
+pg:
+  url: "postgres://postgres:postgres@localhost:5432/uni-auth sslmode=disable"
+  pool_max: 2
+#  user: "postgres"
+#  password: "postgres"
+#  host: "localhost"
+#  port: 5432
+#  db_name: "postgres"
+
+http:
+  port: 8080
+  timeout: 4s
+  idle_timeout: 30s
+
+#pg_url: postgres://postgres:postgres@localhost:5432/go-template
