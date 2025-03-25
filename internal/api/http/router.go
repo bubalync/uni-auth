@@ -1,7 +1,8 @@
 package http
 
 import (
-	_ "github.com/bubalync/uni-auth/docs"
+	_ "github.com/bubalync/uni-auth/docs" // Swagger docs.
+	"github.com/bubalync/uni-auth/internal/config"
 	"github.com/gin-gonic/gin"
 	sloggin "github.com/samber/slog-gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -18,13 +19,15 @@ import (
 //	@version		1.0
 //	@host			localhost:8080
 //	@BasePath		/
-func FillRouter(r *gin.Engine, log *slog.Logger) *gin.Engine {
+func FillRouter(r *gin.Engine, cfg *config.Config, log *slog.Logger) *gin.Engine {
 	// Middleware
 	r.Use(gin.Recovery())
 	r.Use(sloggin.New(log))
 
 	// Swagger
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	if *cfg.Swagger.Enabled {
+		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	}
 
 	// Routers
 	apiGroup := r.Group("/api")

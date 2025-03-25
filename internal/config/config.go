@@ -11,11 +11,12 @@ import (
 
 type (
 	Config struct {
-		Env  string `yaml:"env" env:"ENV" env-default:"local"`
-		App  App    `yaml:"app"`
-		Log  Log    `yaml:"log"`
-		PG   PG     `yaml:"pg"`
-		HTTP HTTP   `yaml:"http"`
+		Env     string  `yaml:"env" env:"ENV" env-default:"local"`
+		App     App     `yaml:"app"`
+		Log     Log     `yaml:"log"`
+		PG      PG      `yaml:"pg"`
+		HTTP    HTTP    `yaml:"http"`
+		Swagger Swagger `yaml:"swagger"`
 	}
 
 	App struct {
@@ -41,6 +42,10 @@ type (
 		Port        string        `yaml:"port" env:"HTTP_PORT" env-required:"true"`
 		Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
 		IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
+	}
+
+	Swagger struct {
+		Enabled *bool `yaml:"enabled" env:"SWAGGER_ENABLED" env-default:"false"`
 	}
 )
 

@@ -39,7 +39,7 @@ func Run(cfg *config.Config) {
 		httpserver.IdleTimeout(cfg.HTTP.IdleTimeout),
 	)
 
-	http.FillRouter(server.Router, log)
+	http.FillRouter(server.Router, cfg, log)
 
 	log.Info("Starting server.", slog.String("Port", cfg.HTTP.Port))
 	go func() {
