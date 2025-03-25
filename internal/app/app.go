@@ -7,7 +7,9 @@ import (
 	"github.com/bubalync/uni-auth/internal/config"
 	"github.com/bubalync/uni-auth/pkg/httpserver"
 	"github.com/bubalync/uni-auth/pkg/logger"
+	"github.com/bubalync/uni-auth/pkg/logger/sl"
 	"github.com/bubalync/uni-auth/pkg/postgres"
+	"log/slog"
 	nethttp "net/http"
 
 	"os"
@@ -22,7 +24,7 @@ func Run(cfg *config.Config) {
 	// Postgres
 	pg, err := postgres.New(cfg.PG.Url, postgres.MaxPoolSize(cfg.PG.PoolMax))
 	if err != nil {
-		log.Error("app - Run - postgres.New: %w", err)
+		log.Error("app - Run - postgres.New", sl.Err(err))
 	}
 	defer pg.Close()
 
@@ -39,10 +41,10 @@ func Run(cfg *config.Config) {
 
 	http.FillRouter(server.Router, log)
 
-	log.Info("Starting server on port %s", cfg.HTTP.Port)
+	log.Info("Starting server.", slog.String("Port", cfg.HTTP.Port))
 	go func() {
 		if err := server.Start(); err != nil && !errors.Is(err, nethttp.ErrServerClosed) {
-			log.Error("listen: %s\n", err)
+			log.Error("listen", sl.Err(err))
 			os.Exit(1)
 		}
 	}()
@@ -55,7 +57,7 @@ func Run(cfg *config.Config) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := server.Stop(ctx); err != nil {
-		log.Error("Server Shutdown:", err)
+		log.Error("Server Shutdown:", sl.Err(err))
 	}
 	<-ctx.Done()
 	log.Info("Timeout of 5 seconds.")
