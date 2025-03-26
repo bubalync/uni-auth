@@ -2,13 +2,14 @@ package http
 
 import (
 	_ "github.com/bubalync/uni-auth/docs" // Swagger docs.
+	v1 "github.com/bubalync/uni-auth/internal/api/http/v1"
 	"github.com/bubalync/uni-auth/internal/config"
+	"github.com/bubalync/uni-auth/internal/services"
 	"github.com/gin-gonic/gin"
 	sloggin "github.com/samber/slog-gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"log/slog"
-	"net/http"
 )
 
 // FillRouter -.
@@ -19,7 +20,7 @@ import (
 //	@version		1.0
 //	@host			localhost:8080
 //	@BasePath		/
-func FillRouter(r *gin.Engine, cfg *config.Config, log *slog.Logger) *gin.Engine {
+func FillRouter(r *gin.Engine, cfg *config.Config, log *slog.Logger, us services.User) {
 	// Middleware
 	r.Use(gin.Recovery())
 	r.Use(sloggin.New(log))
@@ -30,25 +31,8 @@ func FillRouter(r *gin.Engine, cfg *config.Config, log *slog.Logger) *gin.Engine
 	}
 
 	// Routers
-	apiGroup := r.Group("/api")
+	apiV1Group := r.Group("/api/v1")
 	{
-		apiGroup.GET("/ping", pongHandler())
-	}
-
-	return r
-}
-
-// PingExample godoc
-// @Summary ping example
-// @Schemes
-// @Description do ping
-// @Tags example
-// @Accept json
-// @Produce json
-// @Success 200 {string} Hello world
-// @Router /api/ping [get]
-func pongHandler() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		c.String(http.StatusOK, "pong")
+		v1.NewUserRoutes(log, apiV1Group, us)
 	}
 }

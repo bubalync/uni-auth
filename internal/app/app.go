@@ -5,6 +5,8 @@ import (
 	"errors"
 	"github.com/bubalync/uni-auth/internal/api/http"
 	"github.com/bubalync/uni-auth/internal/config"
+	repo "github.com/bubalync/uni-auth/internal/repo/persistent"
+	us "github.com/bubalync/uni-auth/internal/services/user"
 	"github.com/bubalync/uni-auth/pkg/httpserver"
 	"github.com/bubalync/uni-auth/pkg/logger"
 	"github.com/bubalync/uni-auth/pkg/logger/sl"
@@ -29,6 +31,7 @@ func Run(cfg *config.Config) {
 	defer pg.Close()
 
 	// services
+	userService := us.New(repo.NewUserRepo(pg))
 
 	// HTTP Server
 	server := httpserver.NewServer(
@@ -39,7 +42,7 @@ func Run(cfg *config.Config) {
 		httpserver.IdleTimeout(cfg.HTTP.IdleTimeout),
 	)
 
-	http.FillRouter(server.Router, cfg, log)
+	http.FillRouter(server.Router, cfg, log, userService)
 
 	log.Info("Starting server.", slog.String("Port", cfg.HTTP.Port))
 	go func() {
