@@ -1,24 +1,68 @@
 basePath: /
+definitions:
+  response.ErrResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  v1.registerRequest:
+    properties:
+      email:
+        example: email@example.com
+        type: string
+      password:
+        example: y0urP@ssw0rd
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  v1.registerResponse:
+    properties:
+      id:
+        example: d13a75e2-3d21-4e57-9dc0-3a7f5bee4c25
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact: {}
-  description: '...'
-  title: Go API
+  description: Authorization, registration, etc...
+  title: Universal authorization service API
   version: "1.0"
 paths:
-  /api/ping:
-    get:
+  /api/v1/users/register:
+    post:
       consumes:
       - application/json
-      description: do ping
+      description: Register a new user
+      operationId: do-translate
+      parameters:
+      - description: Registration payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.registerRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            type: string
-      summary: ping example
+            $ref: '#/definitions/v1.registerResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+      summary: Register
       tags:
-      - example
+      - Users
 swagger: "2.0"
