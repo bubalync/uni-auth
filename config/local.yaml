@@ -7,7 +7,7 @@ log:
   level: "debug"
 
 pg:
-  url: "postgres://postgres:postgres@localhost:5432/uni-auth sslmode=disable"
+  url: "postgres://postgres:postgres@localhost:5432/uni-auth"
   pool_max: 2
 #  user: "postgres"
 #  password: "postgres"
@@ -22,6 +22,3 @@ http:
 
 swagger:
   enabled: true
-
-
-#pg_url: postgres://postgres:postgres@localhost:5432/go-template
