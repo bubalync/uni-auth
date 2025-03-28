@@ -7,10 +7,10 @@ run-local:
 .PHONY: local
 
 migrate-up:
-	go run cmd/migrator/migrator.go --databaseURL "postgres://postgres:postgres@localhost:5432/template-db"
+	go run cmd/migrator/migrator.go --databaseURL "postgres://postgres:postgres@localhost:5432/uni-auth"
 
 swag: ## swag init
-	swag init -g internal/controller/http/router.go
+	swag init -g internal/api/http/router.go
 .PHONY: swag
 
 

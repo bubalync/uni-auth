@@ -12,6 +12,6 @@ type UserRepo interface {
 	ResetPassword(ctx context.Context, passwordHash []byte) error
 	Update(ctx context.Context, u *entity.User) (string, error)
 	UserByEmail(ctx context.Context, email string) (*entity.User, error)
-	UserByEmailIsExists(ctx context.Context, email string) (bool, error)
+	UserByEmailIsExists(ctx context.Context, email string) (*bool, error)
 	UserByID(ctx context.Context, id uuid.UUID) (*entity.User, error)
 }
