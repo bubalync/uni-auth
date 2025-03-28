@@ -5,54 +5,59 @@ import (
 	"github.com/bubalync/uni-auth/internal/entity"
 	"github.com/bubalync/uni-auth/internal/repo"
 	"github.com/google/uuid"
+	"log/slog"
 )
 
 // Service -.
 type Service struct {
 	repo repo.UserRepo
+	log  *slog.Logger
 }
 
 // New -.
-func New(r repo.UserRepo) *Service {
-	return &Service{repo: r}
+func New(log *slog.Logger, r repo.UserRepo) *Service {
+	return &Service{
+		r,
+		log,
+	}
 }
 
-func (us *Service) Register(ctx context.Context, u *entity.User) error {
+func (s *Service) Delete(ctx context.Context, u *entity.User) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (us *Service) Login(ctx context.Context, u *entity.User) (string, error) {
+func (s *Service) Login(ctx context.Context, u *entity.User) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (us *Service) ResetPassword(ctx context.Context, u *entity.User) error {
+func (s *Service) Logout(ctx context.Context, u *entity.User) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (us *Service) Update(ctx context.Context, u *entity.User) error {
+func (s *Service) Register(ctx context.Context, email, password string) (uuid.UUID, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (us *Service) UserByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
+func (s *Service) ResetPassword(ctx context.Context, u *entity.User) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (us *Service) UserByEmail(ctx context.Context, email string) (*entity.User, error) {
+func (s *Service) Update(ctx context.Context, u *entity.User) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (us *Service) Logout(ctx context.Context, u *entity.User) error {
+func (s *Service) UserByEmail(ctx context.Context, email string) (*entity.User, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (us *Service) Delete(ctx context.Context, u *entity.User) error {
+func (s *Service) UserByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -15,32 +15,37 @@ func NewUserRepo(pg *postgres.Postgres) *Repo {
 	return &Repo{pg}
 }
 
-func (ur *Repo) Create(ctx context.Context, u *entity.User) error {
+func (r *Repo) Create(ctx context.Context, u *entity.User) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ur *Repo) Update(ctx context.Context, u *entity.User) (string, error) {
+func (r *Repo) Delete(ctx context.Context, id uuid.UUID) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ur *Repo) ResetPassword(ctx context.Context, passwordHash []byte) error {
+func (r *Repo) ResetPassword(ctx context.Context, passwordHash []byte) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ur *Repo) UserByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
+func (r *Repo) Update(ctx context.Context, u *entity.User) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ur *Repo) UserByEmail(ctx context.Context, email string) (*entity.User, error) {
+func (r *Repo) UserByEmail(ctx context.Context, email string) (*entity.User, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (ur *Repo) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *Repo) UserByEmailIsExists(ctx context.Context, email string) (bool, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (r *Repo) UserByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
 	//TODO implement me
 	panic("implement me")
 }
