@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX users_email_key ON users(email);
+CREATE UNIQUE INDEX users_email_lower_unique ON users (LOWER(email));
 CREATE INDEX users_created_at_idx ON users(created_at);
