@@ -37,7 +37,7 @@ func NewUserRoutes(l *slog.Logger, v1Group *gin.RouterGroup, us services.User) {
 
 type registerRequest struct {
 	Email    string `json:"email"     validate:"required,email"  example:"email@example.com"`
-	Password string `json:"password"  validate:"required"  example:"y0urP@ssw0rd"`
+	Password string `json:"password"  minLength:"8" maxLength:"30" validate:"required,min=8,max=30"  example:"y0urP@ssw0rd"`
 }
 
 type registerResponse struct {

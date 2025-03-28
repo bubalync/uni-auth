@@ -91,6 +91,8 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
+                    "maxLength": 30,
+                    "minLength": 8,
                     "example": "y0urP@ssw0rd"
                 }
             }
