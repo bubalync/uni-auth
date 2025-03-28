@@ -31,7 +31,7 @@ func Run(cfg *config.Config) {
 	defer pg.Close()
 
 	// services
-	userService := us.New(repo.NewUserRepo(pg))
+	userService := us.New(log, repo.NewUserRepo(pg))
 
 	// HTTP Server
 	server := httpserver.NewServer(
