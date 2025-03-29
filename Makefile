@@ -17,3 +17,7 @@ swag: ## swag init
 create-mig: ## create new migrations with name by $name. https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
 	migrate create -ext sql -dir migrations -seq $(name)
 .PHONY: create-mig
+
+tests:
+	go test -v ./tests/...
+.PHONY: tests

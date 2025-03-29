@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
 	"os"
@@ -50,19 +49,23 @@ type (
 )
 
 func NewConfig() *Config {
-	path := fetchConfigPath()
-	fmt.Println(path)
-	if path == "" {
-		log.Fatalf("config file path is empty")
+	configPath := fetchConfigPath()
+	if configPath == "" {
+		log.Fatalf("config path is empty")
 	}
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	return NewConfigByPath(configPath)
+}
+
+func NewConfigByPath(configPath string) *Config {
+	// check if file exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		log.Fatalf("config file does not exist")
 	}
 
 	cfg := &Config{}
 
-	if err := cleanenv.ReadConfig(path, cfg); err != nil {
+	if err := cleanenv.ReadConfig(configPath, cfg); err != nil {
 		log.Fatalf("failed to read config: " + err.Error())
 	}
 
