@@ -2,57 +2,59 @@ package httpserver
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 	"time"
+)
 
-	"github.com/gin-gonic/gin"
-	sloggin "github.com/samber/slog-gin"
+const (
+	defaultReadTimeout     = 5 * time.Second
+	defaultWriteTimeout    = 5 * time.Second
+	defaultAddr            = ":80"
+	defaultShutdownTimeout = 3 * time.Second
 )
 
 type Server struct {
-	Router *gin.Engine
-	server *http.Server
-
-	address      string
-	readTimeout  time.Duration
-	writeTimeout time.Duration
-	idleTimeout  time.Duration
+	server          *http.Server
+	notify          chan error
+	shutdownTimeout time.Duration
 }
 
-func NewServer(log *slog.Logger, opts ...Option) *Server {
-	s := &Server{}
+func New(handler http.Handler, opts ...Option) *Server {
+	httpServer := &http.Server{
+		Handler:      handler,
+		ReadTimeout:  defaultReadTimeout,
+		WriteTimeout: defaultWriteTimeout,
+		Addr:         defaultAddr,
+	}
 
-	router := gin.New()
-
-	// Middleware
-	router.Use(gin.Recovery())
-	router.Use(sloggin.New(log))
+	s := &Server{
+		server:          httpServer,
+		notify:          make(chan error, 1),
+		shutdownTimeout: defaultShutdownTimeout,
+	}
 
 	// Custom options
 	for _, opt := range opts {
 		opt(s)
 	}
 
-	s.Router = router
-	s.server = &http.Server{
-		Addr:         s.address,
-		Handler:      s.Router,
-		ReadTimeout:  s.readTimeout,
-		WriteTimeout: s.writeTimeout,
-		IdleTimeout:  s.idleTimeout,
-	}
-
 	return s
 }
 
-func (s *Server) Start() error {
-	return s.server.ListenAndServe()
+func (s *Server) Start() {
+	go func() {
+		s.notify <- s.server.ListenAndServe()
+		close(s.notify)
+	}()
 }
 
-func (s *Server) Stop(ctx context.Context) error {
-	if s.server != nil {
-		return s.server.Shutdown(ctx)
-	}
-	return nil
+func (s *Server) Notify() <-chan error {
+	return s.notify
+}
+
+func (s *Server) Shutdown() error {
+	ctx, cancel := context.WithTimeout(context.Background(), s.shutdownTimeout)
+	defer cancel()
+
+	return s.server.Shutdown(ctx)
 }

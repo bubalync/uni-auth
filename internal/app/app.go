@@ -1,8 +1,7 @@
 package app
 
 import (
-	"context"
-	"errors"
+	"fmt"
 	"github.com/bubalync/uni-auth/internal/api/http"
 	"github.com/bubalync/uni-auth/internal/config"
 	repo "github.com/bubalync/uni-auth/internal/repo/persistent"
@@ -11,13 +10,11 @@ import (
 	"github.com/bubalync/uni-auth/pkg/logger"
 	"github.com/bubalync/uni-auth/pkg/logger/sl"
 	"github.com/bubalync/uni-auth/pkg/postgres"
+	"github.com/gin-gonic/gin"
 	"log/slog"
-	nethttp "net/http"
-
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 func Run(cfg *config.Config) {
@@ -33,36 +30,39 @@ func Run(cfg *config.Config) {
 	// services
 	userService := us.New(log, repo.NewUserRepo(pg))
 
-	// HTTP Server
-	server := httpserver.NewServer(
-		log,
+	// Gin handler
+	handler := gin.New()
+	http.NewRouter(handler, cfg, log, userService)
+
+	// HTTP server
+	httpServer := httpserver.New(
+		handler,
 		httpserver.Port(cfg.HTTP.Port),
 		httpserver.ReadTimeout(cfg.HTTP.Timeout),
 		httpserver.WriteTimeout(cfg.HTTP.Timeout),
 		httpserver.IdleTimeout(cfg.HTTP.IdleTimeout),
 	)
 
-	http.FillRouter(server.Router, cfg, log, userService)
+	log.Info("Starting http server...", slog.String("Port", cfg.HTTP.Port))
+	httpServer.Start()
 
-	log.Info("Starting server.", slog.String("Port", cfg.HTTP.Port))
-	go func() {
-		if err := server.Start(); err != nil && !errors.Is(err, nethttp.ErrServerClosed) {
-			log.Error("listen", sl.Err(err))
-			os.Exit(1)
-		}
-	}()
+	log.Info(fmt.Sprintf("%s service ready to work", cfg.App.Name))
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Info("Shutting down server...")
+	// Waiting signal
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := server.Stop(ctx); err != nil {
-		log.Error("Server Shutdown:", sl.Err(err))
+	select {
+	case sig := <-interrupt:
+		log.Info("app - Run - signal: " + sig.String())
+	case err = <-httpServer.Notify():
+		log.Error("app - Run - httpServer.Notify:", sl.Err(err))
 	}
-	<-ctx.Done()
-	log.Info("Timeout of 5 seconds.")
-	log.Info("Server exiting")
+
+	// Graceful shutdown
+	log.Info("Shutting down server...")
+	err = httpServer.Shutdown()
+	if err != nil {
+		log.Error("app - Run - httpServer.Shutdown:", sl.Err(err))
+	}
 }

@@ -12,7 +12,7 @@ import (
 	"log/slog"
 )
 
-// FillRouter -.
+// NewRouter -.
 // Swagger spec:
 //
 //	@title			Universal authorization service API
@@ -20,7 +20,7 @@ import (
 //	@version		1.0
 //	@host			localhost:8080
 //	@BasePath		/
-func FillRouter(r *gin.Engine, cfg *config.Config, log *slog.Logger, us services.User) {
+func NewRouter(r *gin.Engine, cfg *config.Config, log *slog.Logger, us services.User) {
 	// Middleware
 	r.Use(gin.Recovery())
 	r.Use(sloggin.New(log))
