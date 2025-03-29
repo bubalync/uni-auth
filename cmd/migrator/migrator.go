@@ -37,8 +37,7 @@ func main() {
 	}
 	err = m.Up()
 
-	//todo catch error
-	defer m.Close()
+	defer func() { _, _ = m.Close() }()
 
 	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		log.Fatalf("Migrate: up error: %s", err)
