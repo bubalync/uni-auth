@@ -28,7 +28,6 @@ const docTemplate = `{
                     "Users"
                 ],
                 "summary": "Register",
-                "operationId": "do-translate",
                 "parameters": [
                     {
                         "description": "Registration payload",
@@ -73,8 +72,11 @@ const docTemplate = `{
         "response.ErrResponse": {
             "type": "object",
             "properties": {
-                "error": {
-                    "type": "string"
+                "errors": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -93,7 +95,7 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 30,
                     "minLength": 8,
-                    "example": "y0urP@ssw0rd"
+                    "example": "YourV@lidPassw0rd!"
                 }
             }
         },

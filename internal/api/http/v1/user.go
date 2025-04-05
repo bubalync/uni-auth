@@ -5,8 +5,8 @@ import (
 	"github.com/bubalync/uni-auth/internal/lib/api/response"
 	"github.com/bubalync/uni-auth/internal/services"
 	"github.com/bubalync/uni-auth/pkg/logger/sl"
+	"github.com/bubalync/uni-auth/pkg/validator"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"log/slog"
 	"net/http"
@@ -15,11 +15,11 @@ import (
 type userRoutes struct {
 	us services.User
 	l  *slog.Logger
-	v  *validator.Validate
+	cv *validator.CustomValidator
 }
 
-func NewUserRoutes(l *slog.Logger, v1Group *gin.RouterGroup, us services.User) {
-	r := &userRoutes{us, l, validator.New(validator.WithRequiredStructEnabled())}
+func NewUserRoutes(l *slog.Logger, v1Group *gin.RouterGroup, cv *validator.CustomValidator, us services.User) {
+	r := &userRoutes{us, l, cv}
 
 	v1Group.POST("/users/register", r.register)
 	v1Group.POST("/users/login", r.login)
@@ -37,7 +37,7 @@ func NewUserRoutes(l *slog.Logger, v1Group *gin.RouterGroup, us services.User) {
 
 type registerRequest struct {
 	Email    string `json:"email"     validate:"required,email"  example:"email@example.com"`
-	Password string `json:"password"  minLength:"8" maxLength:"30" validate:"required,min=8,max=30"  example:"y0urP@ssw0rd"`
+	Password string `json:"password"  validate:"required,password" minLength:"8" maxLength:"30" example:"YourV@lidPassw0rd!"`
 }
 
 type registerResponse struct {
@@ -46,7 +46,6 @@ type registerResponse struct {
 
 // @Summary     Register
 // @Description Register a new user
-// @ID          do-translate
 // @Tags  	    Users
 // @Accept      json
 // @Produce     json
@@ -57,7 +56,7 @@ type registerResponse struct {
 // @Failure     500 {object} response.ErrResponse
 // @Router      /api/v1/users/register [post]
 func (r *userRoutes) register(c *gin.Context) {
-	const op = "handlers.url.save.New"
+	const op = "api.http.v1.user.register"
 	log := r.l.With(slog.String("op", op))
 
 	var req registerRequest
@@ -67,13 +66,10 @@ func (r *userRoutes) register(c *gin.Context) {
 		return
 	}
 
-	if err := r.v.Struct(req); err != nil {
-		log.Error("Request validation error", sl.Err(err))
+	if err := r.cv.ValidateStruct(req); err != nil {
+		log.Error("Request validation error", sl.ErrMap(err))
 
-		var validationErr validator.ValidationErrors
-		errors.As(err, &validationErr)
-
-		c.JSON(http.StatusBadRequest, response.ValidationError(validationErr))
+		c.JSON(http.StatusBadRequest, response.ErrorMap(err))
 		return
 	}
 

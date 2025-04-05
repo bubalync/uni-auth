@@ -5,6 +5,7 @@ import (
 	v1 "github.com/bubalync/uni-auth/internal/api/http/v1"
 	"github.com/bubalync/uni-auth/internal/config"
 	"github.com/bubalync/uni-auth/internal/services"
+	"github.com/bubalync/uni-auth/pkg/validator"
 	"github.com/gin-gonic/gin"
 	sloggin "github.com/samber/slog-gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -30,9 +31,11 @@ func NewRouter(r *gin.Engine, cfg *config.Config, log *slog.Logger, us services.
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	}
 
+	cv := validator.NewCustomValidator()
+
 	// Routers
 	apiV1Group := r.Group("/api/v1")
 	{
-		v1.NewUserRoutes(log, apiV1Group, us)
+		v1.NewUserRoutes(log, apiV1Group, cv, us)
 	}
 }
