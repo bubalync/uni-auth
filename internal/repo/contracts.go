@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type UserRepo interface {
+type User interface {
 	Create(ctx context.Context, u *entity.User) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	ResetPassword(ctx context.Context, passwordHash []byte) error

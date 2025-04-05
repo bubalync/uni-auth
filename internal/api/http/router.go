@@ -4,7 +4,7 @@ import (
 	_ "github.com/bubalync/uni-auth/docs" // Swagger docs.
 	v1 "github.com/bubalync/uni-auth/internal/api/http/v1"
 	"github.com/bubalync/uni-auth/internal/config"
-	"github.com/bubalync/uni-auth/internal/services"
+	"github.com/bubalync/uni-auth/internal/service"
 	"github.com/bubalync/uni-auth/pkg/validator"
 	"github.com/gin-gonic/gin"
 	sloggin "github.com/samber/slog-gin"
@@ -21,21 +21,26 @@ import (
 //	@version		1.0
 //	@host			localhost:8080
 //	@BasePath		/
-func NewRouter(r *gin.Engine, cfg *config.Config, log *slog.Logger, us services.User) {
+func NewRouter(handler *gin.Engine, cfg *config.Config, log *slog.Logger, services *service.Services) {
 	// Middleware
-	r.Use(gin.Recovery())
-	r.Use(sloggin.New(log))
+	handler.Use(gin.Recovery())
+	handler.Use(sloggin.New(log))
 
 	// Swagger
 	if *cfg.Swagger.Enabled {
-		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+		handler.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	}
 
 	cv := validator.NewCustomValidator()
 
-	// Routers
-	apiV1Group := r.Group("/api/v1")
+	authGroup := handler.Group("/auth")
 	{
-		v1.NewUserRoutes(log, apiV1Group, cv, us)
+		v1.NewAuthRoutes(authGroup, log, cv, services.Auth)
+	}
+
+	// Routers
+	v1Group := handler.Group("/api/v1")
+	{
+		v1.NewUserRoutes(v1Group.Group("/users"), log, cv, services.User)
 	}
 }

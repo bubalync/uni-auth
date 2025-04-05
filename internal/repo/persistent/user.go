@@ -2,21 +2,24 @@ package persistent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/bubalync/uni-auth/internal/entity"
+	"github.com/bubalync/uni-auth/internal/repo/repoErrs"
 	"github.com/bubalync/uni-auth/pkg/postgres"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type Repo struct {
+type UserRepo struct {
 	*postgres.Postgres
 }
 
-func NewUserRepo(pg *postgres.Postgres) *Repo {
-	return &Repo{pg}
+func NewUserRepo(pg *postgres.Postgres) *UserRepo {
+	return &UserRepo{pg}
 }
 
-func (r *Repo) Create(ctx context.Context, u *entity.User) error {
+func (r *UserRepo) Create(ctx context.Context, u *entity.User) error {
 	const op = "repo.persistent.user.Create"
 
 	sql, args, err := r.Builder.
@@ -30,33 +33,40 @@ func (r *Repo) Create(ctx context.Context, u *entity.User) error {
 
 	_, err = r.Pool.Exec(ctx, sql, args...)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if ok := errors.As(err, &pgErr); ok {
+			if pgErr.ConstraintName == "users_email_lower_unique" {
+				return repoErrs.ErrAlreadyExists
+			}
+		}
+
 		return fmt.Errorf("%s: r.Pool.Exec: %w", op, err)
 	}
 
 	return nil
 }
 
-func (r *Repo) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *UserRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *Repo) ResetPassword(ctx context.Context, passwordHash []byte) error {
+func (r *UserRepo) ResetPassword(ctx context.Context, passwordHash []byte) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *Repo) Update(ctx context.Context, u *entity.User) (string, error) {
+func (r *UserRepo) Update(ctx context.Context, u *entity.User) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *Repo) UserByEmail(ctx context.Context, email string) (*entity.User, error) {
+func (r *UserRepo) UserByEmail(ctx context.Context, email string) (*entity.User, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *Repo) UserByEmailIsExists(ctx context.Context, email string) (*bool, error) {
+func (r *UserRepo) UserByEmailIsExists(ctx context.Context, email string) (*bool, error) {
 	const op = "repo.persistent.user.UserByEmailIsExists"
 
 	sql, _, err := r.Builder.
@@ -80,7 +90,7 @@ func (r *Repo) UserByEmailIsExists(ctx context.Context, email string) (*bool, er
 	return &isExists, nil
 }
 
-func (r *Repo) UserByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
+func (r *UserRepo) UserByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
 	//TODO implement me
 	panic("implement me")
 }

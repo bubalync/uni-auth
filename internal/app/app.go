@@ -5,7 +5,7 @@ import (
 	"github.com/bubalync/uni-auth/internal/api/http"
 	"github.com/bubalync/uni-auth/internal/config"
 	repo "github.com/bubalync/uni-auth/internal/repo/persistent"
-	us "github.com/bubalync/uni-auth/internal/services/user"
+	"github.com/bubalync/uni-auth/internal/service"
 	"github.com/bubalync/uni-auth/pkg/httpserver"
 	"github.com/bubalync/uni-auth/pkg/logger"
 	"github.com/bubalync/uni-auth/pkg/logger/sl"
@@ -28,11 +28,11 @@ func Run(cfg *config.Config) {
 	defer pg.Close()
 
 	// services
-	userService := us.New(log, repo.NewUserRepo(pg))
+	services := service.NewServices(log, cfg, repo.NewUserRepo(pg))
 
 	// Gin handler
 	handler := gin.New()
-	http.NewRouter(handler, cfg, log, userService)
+	http.NewRouter(handler, cfg, log, services)
 
 	// HTTP server
 	httpServer := httpserver.New(

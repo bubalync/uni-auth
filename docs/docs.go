@@ -15,9 +15,9 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/users/register": {
+        "/auth/sign-up": {
             "post": {
-                "description": "Register a new user",
+                "description": "Sign up",
                 "consumes": [
                     "application/json"
                 ],
@@ -25,9 +25,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "auth"
                 ],
-                "summary": "Register",
+                "summary": "Sign up",
                 "parameters": [
                     {
                         "description": "Registration payload",
@@ -35,15 +35,15 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.registerRequest"
+                            "$ref": "#/definitions/v1.signUpRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/v1.registerResponse"
+                            "$ref": "#/definitions/v1.signUpResponse"
                         }
                     },
                     "400": {
@@ -80,7 +80,7 @@ const docTemplate = `{
                 }
             }
         },
-        "v1.registerRequest": {
+        "v1.signUpRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -89,17 +89,19 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "type": "string",
+                    "maxLength": 50,
+                    "minLength": 4,
                     "example": "email@example.com"
                 },
                 "password": {
                     "type": "string",
-                    "maxLength": 30,
+                    "maxLength": 32,
                     "minLength": 8,
                     "example": "YourV@lidPassw0rd!"
                 }
             }
         },
-        "v1.registerResponse": {
+        "v1.signUpResponse": {
             "type": "object",
             "properties": {
                 "id": {

@@ -41,40 +41,47 @@ func NewCustomValidator() *CustomValidator {
 }
 
 func (cv *CustomValidator) ValidateStruct(data interface{}) map[string]string {
-	errors := make(map[string]string)
-
 	err := cv.V.Struct(data)
 	if err != nil {
-		for _, err := range err.(validator.ValidationErrors) {
-			field := err.Field()
-			switch err.Tag() {
-			case "required":
-				errors[field] = fmt.Sprintf("%s is a required", field)
-			case "email":
-				errors[field] = fmt.Sprintf("'%s' is not a valid email format", err.Field())
-			case "password":
-				errors[field] = fmt.Sprintf(
-					"%s must be between %d and %d in length"+
-						", contain at least %d lowercase"+
-						", %d uppercase"+
-						", %d digits"+
-						", and %d special characters (!@#$%%^&*)",
-					field,
-					passwordMinLength, passwordMaxLength,
-					passwordMinLower,
-					passwordMinUpper,
-					passwordMinDigit,
-					passwordMinSymbol,
-				)
-			case "min":
-				errors[field] = fmt.Sprintf("'%s' must be longer than %s", err.Field(), err.Param())
-			case "max":
-				errors[field] = fmt.Sprintf("'%s' must be shorter than %s", err.Field(), err.Param())
-			default:
-				errors[field] = fmt.Sprintf("'%s' is not valid", err.Field())
-			}
+		return parseErrors(err)
+	}
+
+	return nil
+}
+
+func parseErrors(err error) map[string]string {
+	errors := make(map[string]string)
+
+	for _, err := range err.(validator.ValidationErrors) {
+		field := err.Field()
+		switch err.Tag() {
+		case "required":
+			errors[field] = fmt.Sprintf("%s is a required", field)
+		case "email":
+			errors[field] = fmt.Sprintf("'%s' is not a valid email format", err.Field())
+		case "password":
+			errors[field] = fmt.Sprintf(
+				"%s must be between %d and %d in length"+
+					", contain at least %d lowercase"+
+					", %d uppercase"+
+					", %d digits"+
+					", and %d special characters (!@#$%%^&*)",
+				field,
+				passwordMinLength, passwordMaxLength,
+				passwordMinLower,
+				passwordMinUpper,
+				passwordMinDigit,
+				passwordMinSymbol,
+			)
+		case "min":
+			errors[field] = fmt.Sprintf("'%s' must be longer than %s", err.Field(), err.Param())
+		case "max":
+			errors[field] = fmt.Sprintf("'%s' must be shorter than %s", err.Field(), err.Param())
+		default:
+			errors[field] = fmt.Sprintf("'%s' is not valid", err.Field())
 		}
 	}
+
 	return errors
 }
 

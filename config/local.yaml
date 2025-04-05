@@ -22,3 +22,8 @@ http:
 
 swagger:
   enabled: true
+
+jwt:
+  sign_key: "sign_key"
+  token_ttl: 120m
+
