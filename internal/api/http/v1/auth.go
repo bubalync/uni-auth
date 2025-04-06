@@ -29,8 +29,8 @@ func NewAuthRoutes(g *gin.RouterGroup, log *slog.Logger, cv *validator.CustomVal
 }
 
 type signUpRequest struct {
-	Email    string `json:"email"    validate:"required,email,min=4,max=50"     example:"email@example.com"`
-	Password string `json:"password" validate:"required,password" minLength:"8" maxLength:"32" example:"YourV@lidPassw0rd!"`
+	Email    string `json:"email"    validate:"required,email,min=5,max=150" minLength:"5" maxLength:"150" example:"email@example.com"`
+	Password string `json:"password" validate:"required,password"            minLength:"8" maxLength:"32"  example:"YourV@lidPassw0rd!"`
 }
 
 type signUpResponse struct {
@@ -49,7 +49,7 @@ type signUpResponse struct {
 // @Failure     500 {object} response.ErrResponse
 // @Router      /auth/sign-up [post]
 func (r *authRoutes) signUp(c *gin.Context) {
-	const op = "api.http.v1.user.register"
+	const op = "api.http.v1.auth.sign-up"
 	log := r.l.With(slog.String("op", op))
 
 	var req signUpRequest
