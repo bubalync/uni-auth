@@ -43,7 +43,7 @@ func (m *MockUser) EXPECT() *MockUserMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockUser) Create(ctx context.Context, u *entity.User) error {
+func (m *MockUser) Create(ctx context.Context, u entity.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", ctx, u)
 	ret0, _ := ret[0].(error)
@@ -85,7 +85,7 @@ func (mr *MockUserMockRecorder) ResetPassword(ctx, passwordHash any) *gomock.Cal
 }
 
 // Update mocks base method.
-func (m *MockUser) Update(ctx context.Context, u *entity.User) (string, error) {
+func (m *MockUser) Update(ctx context.Context, u entity.User) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, u)
 	ret0, _ := ret[0].(string)
@@ -100,10 +100,10 @@ func (mr *MockUserMockRecorder) Update(ctx, u any) *gomock.Call {
 }
 
 // UserByEmail mocks base method.
-func (m *MockUser) UserByEmail(ctx context.Context, email string) (*entity.User, error) {
+func (m *MockUser) UserByEmail(ctx context.Context, email string) (entity.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UserByEmail", ctx, email)
-	ret0, _ := ret[0].(*entity.User)
+	ret0, _ := ret[0].(entity.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -130,10 +130,10 @@ func (mr *MockUserMockRecorder) UserByEmailIsExists(ctx, email any) *gomock.Call
 }
 
 // UserByID mocks base method.
-func (m *MockUser) UserByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
+func (m *MockUser) UserByID(ctx context.Context, id uuid.UUID) (entity.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UserByID", ctx, id)
-	ret0, _ := ret[0].(*entity.User)
+	ret0, _ := ret[0].(entity.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -43,7 +43,7 @@ func (s *Service) CreateUser(ctx context.Context, input CreateUserInput) (uuid.U
 		return uuid.Nil, svcErrs.ErrInternal
 	}
 
-	user := &entity.User{
+	user := entity.User{
 		ID:           uuid.New(),
 		Email:        strings.ToLower(input.Email),
 		PasswordHash: hashedPassword,

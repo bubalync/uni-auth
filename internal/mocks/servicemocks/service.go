@@ -127,7 +127,7 @@ func (m *MockUser) EXPECT() *MockUserMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockUser) Delete(ctx context.Context, u *entity.User) error {
+func (m *MockUser) Delete(ctx context.Context, u entity.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", ctx, u)
 	ret0, _ := ret[0].(error)
@@ -141,7 +141,7 @@ func (mr *MockUserMockRecorder) Delete(ctx, u any) *gomock.Call {
 }
 
 // Logout mocks base method.
-func (m *MockUser) Logout(ctx context.Context, u *entity.User) error {
+func (m *MockUser) Logout(ctx context.Context, u entity.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Logout", ctx, u)
 	ret0, _ := ret[0].(error)
@@ -155,7 +155,7 @@ func (mr *MockUserMockRecorder) Logout(ctx, u any) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockUser) Update(ctx context.Context, u *entity.User) error {
+func (m *MockUser) Update(ctx context.Context, u entity.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", ctx, u)
 	ret0, _ := ret[0].(error)
@@ -169,10 +169,10 @@ func (mr *MockUserMockRecorder) Update(ctx, u any) *gomock.Call {
 }
 
 // UserByEmail mocks base method.
-func (m *MockUser) UserByEmail(ctx context.Context, email string) (*entity.User, error) {
+func (m *MockUser) UserByEmail(ctx context.Context, email string) (entity.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UserByEmail", ctx, email)
-	ret0, _ := ret[0].(*entity.User)
+	ret0, _ := ret[0].(entity.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -184,10 +184,10 @@ func (mr *MockUserMockRecorder) UserByEmail(ctx, email any) *gomock.Call {
 }
 
 // UserByID mocks base method.
-func (m *MockUser) UserByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
+func (m *MockUser) UserByID(ctx context.Context, id uuid.UUID) (entity.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UserByID", ctx, id)
-	ret0, _ := ret[0].(*entity.User)
+	ret0, _ := ret[0].(entity.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
