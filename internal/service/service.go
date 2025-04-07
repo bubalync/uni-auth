@@ -2,13 +2,14 @@ package service
 
 import (
 	"context"
-	"github.com/bubalync/uni-auth/internal/config"
 	"github.com/bubalync/uni-auth/internal/entity"
 	"github.com/bubalync/uni-auth/internal/repo"
 	"github.com/bubalync/uni-auth/internal/service/auth"
 	"github.com/bubalync/uni-auth/internal/service/user"
+	"github.com/bubalync/uni-auth/pkg/hasher"
 	"github.com/google/uuid"
 	"log/slog"
+	"time"
 )
 
 type (
@@ -28,14 +29,24 @@ type (
 	}
 )
 
-type Services struct {
-	Auth Auth
-	User User
-}
+type (
+	ServicesDependencies struct {
+		Repos  *repo.Repositories
+		Hasher hasher.PasswordHasher
 
-func NewServices(log *slog.Logger, cfg *config.Config, userRepo repo.User) *Services {
+		SignKey  string
+		TokenTTL time.Duration
+	}
+
+	Services struct {
+		Auth Auth
+		User User
+	}
+)
+
+func NewServices(log *slog.Logger, deps ServicesDependencies) *Services {
 	return &Services{
-		Auth: auth.New(log, userRepo, cfg.JWT.SignKey, cfg.JWT.TokenTTL),
-		User: user.New(log, userRepo),
+		Auth: auth.New(log, deps.Repos.User, deps.Hasher, deps.SignKey, deps.TokenTTL),
+		User: user.New(log, deps.Repos.User),
 	}
 }
