@@ -19,6 +19,7 @@ migrate-create: ## create new migrations with name by $name. https://github.com/
 
 mockgen: ### generate mock
 	mockgen -source=internal/service/service.go -destination=internal/mocks/servicemocks/service.go -package=servicemocks
+	mockgen -source=pkg/hasher/password.go      -destination=internal/mocks/utilmocks/hasher.go     -package=utilmocks
 	mockgen -source=internal/repo/repo.go       -destination=internal/mocks/repomocks/repo.go       -package=repomocks
 .PHONY: mockgen
 

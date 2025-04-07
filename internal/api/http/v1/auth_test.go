@@ -115,14 +115,6 @@ func TestAuthRoutes_SignUp(t *testing.T) {
 			wantStatusCode:  400,
 			wantRequestBody: `{"errors":{"Email":"Email is a required"}}`,
 		},
-		//{
-		//	name:            "Invalid email: too short",
-		//	args:            args{},
-		//	inputBody:       `{"email":"q@e.c","password":"Qwerty!1"}`,
-		//	mockBehaviour:   func(m *servicemocks.MockAuth, args args) {},
-		//	wantStatusCode:  400,
-		//	wantRequestBody: `{"message":"field email must be at least 4 characters"}` + "\n",
-		//},
 		{
 			name: "Invalid email: too long",
 			args: args{},

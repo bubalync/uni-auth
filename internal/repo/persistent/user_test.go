@@ -38,7 +38,7 @@ func TestUserRepo_Create(t *testing.T) {
 				user: entity.User{
 					ID:           uuid.New(),
 					Email:        "test@example.com",
-					PasswordHash: make([]byte, 1),
+					PasswordHash: []byte{1, 2, 3},
 				},
 			},
 			mockBehavior: func(m pgxmock.PgxPoolIface, args args) {
@@ -54,7 +54,7 @@ func TestUserRepo_Create(t *testing.T) {
 				ctx: context.Background(),
 				user: entity.User{
 					Email:        "test@example.com",
-					PasswordHash: make([]byte, 1),
+					PasswordHash: []byte{1, 2, 3},
 				},
 			},
 			mockBehavior: func(m pgxmock.PgxPoolIface, args args) {
@@ -72,7 +72,7 @@ func TestUserRepo_Create(t *testing.T) {
 				ctx: context.Background(),
 				user: entity.User{
 					Email:        "test@example.com",
-					PasswordHash: make([]byte, 1),
+					PasswordHash: []byte{1, 2, 3},
 				},
 			},
 			mockBehavior: func(m pgxmock.PgxPoolIface, args args) {
@@ -132,7 +132,7 @@ func TestUserRepo_UserByEmailIsExists(t *testing.T) {
 			},
 			mockBehavior: func(m pgxmock.PgxPoolIface, args args) {
 				rows := pgxmock.NewRows([]string{"exists"}).
-					AddRow(false)
+					AddRow(true)
 
 				m.ExpectQuery("SELECT 1 FROM users").
 					WithArgs(args.email).
