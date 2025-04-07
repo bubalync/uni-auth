@@ -15,7 +15,7 @@ swag: ## swag init
 
 migrate-create: ## create new migrations with name by $name. https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
 	migrate create -ext sql -dir migrations -seq $(name)
-.PHONY: create-mig
+.PHONY: migrate-create
 
 mockgen: ### generate mock
 	mockgen -source=internal/service/service.go -destination=internal/mocks/servicemocks/service.go -package=servicemocks
