@@ -33,12 +33,12 @@ func NewRouter(handler *gin.Engine, cfg *config.Config, log *slog.Logger, servic
 
 	cv := validator.NewCustomValidator()
 
+	// Routes
 	authGroup := handler.Group("/auth")
 	{
 		v1.NewAuthRoutes(authGroup, log, cv, services.Auth)
 	}
 
-	// Routers
 	v1Group := handler.Group("/api/v1")
 	{
 		v1.NewUserRoutes(v1Group.Group("/users"), log, cv, services.User)

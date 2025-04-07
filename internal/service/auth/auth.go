@@ -7,9 +7,9 @@ import (
 	"github.com/bubalync/uni-auth/internal/repo"
 	"github.com/bubalync/uni-auth/internal/repo/repoErrs"
 	"github.com/bubalync/uni-auth/internal/service/svcErrs"
+	"github.com/bubalync/uni-auth/pkg/hasher"
 	"github.com/bubalync/uni-auth/pkg/logger/sl"
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"log/slog"
 	"strings"
 	"time"
@@ -17,6 +17,7 @@ import (
 
 type Service struct {
 	userRepo repo.User
+	hasher   hasher.PasswordHasher
 	log      *slog.Logger
 
 	signKey  string
@@ -24,9 +25,10 @@ type Service struct {
 }
 
 // New -.
-func New(log *slog.Logger, userRepo repo.User, signKey string, tokenTTL time.Duration) *Service {
+func New(log *slog.Logger, userRepo repo.User, hasher hasher.PasswordHasher, signKey string, tokenTTL time.Duration) *Service {
 	return &Service{
 		userRepo: userRepo,
+		hasher:   hasher,
 		log:      log,
 		signKey:  signKey,
 		tokenTTL: tokenTTL,
@@ -34,16 +36,16 @@ func New(log *slog.Logger, userRepo repo.User, signKey string, tokenTTL time.Dur
 }
 
 func (s *Service) CreateUser(ctx context.Context, input CreateUserInput) (uuid.UUID, error) {
-	const op = "services.user.Register"
+	const op = "service.auth.CreateUser"
 	log := s.log.With(slog.String("op", op))
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	hashedPassword, err := s.hasher.Hash(input.Password)
 	if err != nil {
 		log.Error("failed to generate hashed password", sl.Err(err))
 		return uuid.Nil, svcErrs.ErrInternal
 	}
 
-	user := &entity.User{
+	user := entity.User{
 		ID:           uuid.New(),
 		Email:        strings.ToLower(input.Email),
 		PasswordHash: hashedPassword,

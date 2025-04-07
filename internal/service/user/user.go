@@ -22,27 +22,27 @@ func New(log *slog.Logger, r repo.User) *Service {
 	}
 }
 
-func (s *Service) Delete(ctx context.Context, u *entity.User) error {
+func (s *Service) Delete(ctx context.Context, u entity.User) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *Service) Logout(ctx context.Context, u *entity.User) error {
+func (s *Service) Logout(ctx context.Context, u entity.User) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *Service) Update(ctx context.Context, u *entity.User) error {
+func (s *Service) Update(ctx context.Context, u entity.User) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *Service) UserByEmail(ctx context.Context, email string) (*entity.User, error) {
+func (s *Service) UserByEmail(ctx context.Context, email string) (entity.User, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s *Service) UserByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
+func (s *Service) UserByID(ctx context.Context, id uuid.UUID) (entity.User, error) {
 	//TODO implement me
 	panic("implement me")
 }

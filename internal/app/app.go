@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"github.com/bubalync/uni-auth/internal/api/http"
 	"github.com/bubalync/uni-auth/internal/config"
-	repo "github.com/bubalync/uni-auth/internal/repo/persistent"
+	"github.com/bubalync/uni-auth/internal/repo"
 	"github.com/bubalync/uni-auth/internal/service"
+	"github.com/bubalync/uni-auth/pkg/hasher"
 	"github.com/bubalync/uni-auth/pkg/httpserver"
 	"github.com/bubalync/uni-auth/pkg/logger"
 	"github.com/bubalync/uni-auth/pkg/logger/sl"
@@ -21,16 +22,29 @@ func Run(cfg *config.Config) {
 	log := logger.New(cfg.Env, cfg.Log.Level)
 
 	// Postgres
+	log.Info("Initializing postgres...")
 	pg, err := postgres.New(cfg.PG.Url, postgres.MaxPoolSize(cfg.PG.PoolMax))
 	if err != nil {
 		log.Error("app - Run - postgres.New", sl.Err(err))
 	}
 	defer pg.Close()
 
+	// Repositories
+	log.Info("Initializing repositories...")
+	repositories := repo.NewRepositories(pg)
+
 	// services
-	services := service.NewServices(log, cfg, repo.NewUserRepo(pg))
+	log.Info("Initializing services...")
+	deps := service.ServicesDependencies{
+		Repos:    repositories,
+		Hasher:   hasher.NewBcryptHasher(),
+		SignKey:  cfg.JWT.SignKey,
+		TokenTTL: cfg.JWT.TokenTTL,
+	}
+	services := service.NewServices(log, deps)
 
 	// Gin handler
+	log.Info("Initializing handlers and routes...")
 	handler := gin.New()
 	http.NewRouter(handler, cfg, log, services)
 
