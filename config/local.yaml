@@ -27,3 +27,6 @@ jwt:
   sign_key: "sign_key"
   token_ttl: 120m
 
+redis:
+  host: "localhost:6379"
+  db: 1

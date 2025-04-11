@@ -18,6 +18,7 @@ type (
 		HTTP    HTTP    `yaml:"http"`
 		Swagger Swagger `yaml:"swagger"`
 		JWT     JWT     `yaml:"jwt"`
+		Redis   Redis   `yaml:"redis"`
 	}
 
 	App struct {
@@ -52,6 +53,11 @@ type (
 	JWT struct {
 		SignKey  string        `yaml:"sign_key"  env:"JWT_SIGN_KEY"  env-required:"true"`
 		TokenTTL time.Duration `yaml:"token_ttl" env:"JWT_TOKEN_TTL" env-required:"true"`
+	}
+
+	Redis struct {
+		Host string `yaml:"host"        env:"REDIS_HOST" env-required:"true"`
+		Db   int    `yaml:"db"          env:"REDIS_DB" env-required:"true"`
 	}
 )
 

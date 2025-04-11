@@ -7,6 +7,7 @@ import (
 	"github.com/bubalync/uni-auth/internal/service/auth"
 	"github.com/bubalync/uni-auth/internal/service/user"
 	"github.com/bubalync/uni-auth/pkg/hasher"
+	"github.com/bubalync/uni-auth/pkg/redis"
 	"github.com/google/uuid"
 	"log/slog"
 	"time"
@@ -33,6 +34,7 @@ type (
 	ServicesDependencies struct {
 		Repos  *repo.Repositories
 		Hasher hasher.PasswordHasher
+		Cache  redis.Cache
 
 		SignKey  string
 		TokenTTL time.Duration

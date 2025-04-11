@@ -11,6 +11,7 @@ import (
 	"github.com/bubalync/uni-auth/pkg/logger"
 	"github.com/bubalync/uni-auth/pkg/logger/sl"
 	"github.com/bubalync/uni-auth/pkg/postgres"
+	"github.com/bubalync/uni-auth/pkg/redis"
 	"github.com/gin-gonic/gin"
 	"log/slog"
 	"os"
@@ -29,6 +30,9 @@ func Run(cfg *config.Config) {
 	}
 	defer pg.Close()
 
+	// Redis
+	redisClient := redis.NewRedisClient(redis.Addr(cfg.Redis.Host), redis.Db(cfg.Redis.Db))
+
 	// Repositories
 	log.Info("Initializing repositories...")
 	repositories := repo.NewRepositories(pg)
@@ -38,6 +42,7 @@ func Run(cfg *config.Config) {
 	deps := service.ServicesDependencies{
 		Repos:    repositories,
 		Hasher:   hasher.NewBcryptHasher(),
+		Cache:    redisClient,
 		SignKey:  cfg.JWT.SignKey,
 		TokenTTL: cfg.JWT.TokenTTL,
 	}
@@ -79,4 +84,10 @@ func Run(cfg *config.Config) {
 	if err != nil {
 		log.Error("app - Run - httpServer.Shutdown:", sl.Err(err))
 	}
+
+	err = redisClient.Close()
+	if err != nil {
+		log.Error("app - Run - redis.Close:", sl.Err(err))
+	}
+
 }
