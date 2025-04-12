@@ -7,12 +7,35 @@ definitions:
           type: string
         type: object
     type: object
+  v1.signInRequest:
+    properties:
+      email:
+        example: email@example.com
+        maxLength: 150
+        minLength: 5
+        type: string
+      password:
+        example: YourV@lidPassw0rd!
+        maxLength: 32
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  v1.signInResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
   v1.signUpRequest:
     properties:
       email:
         example: email@example.com
-        maxLength: 50
-        minLength: 4
+        maxLength: 150
+        minLength: 5
         type: string
       password:
         example: YourV@lidPassw0rd!
@@ -36,6 +59,36 @@ info:
   title: Universal authorization service API
   version: "1.0"
 paths:
+  /auth/sign-in:
+    post:
+      consumes:
+      - application/json
+      description: Sign in
+      parameters:
+      - description: Sign in payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.signInRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.signInResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+      summary: Sign in
+      tags:
+      - auth
   /auth/sign-up:
     post:
       consumes:

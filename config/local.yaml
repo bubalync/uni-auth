@@ -24,8 +24,11 @@ swagger:
   enabled: true
 
 jwt:
-  sign_key: "sign_key"
-  token_ttl: 120m
+  access_sign_key: "access_sign_key"
+  access_token_ttl: 30m
+
+  refresh_sign_key: "refresh_sign_key"
+  refresh_token_ttl: 24h
 
 redis:
   host: "localhost:6379"

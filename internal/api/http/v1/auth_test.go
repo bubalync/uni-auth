@@ -6,7 +6,6 @@ import (
 	"github.com/bubalync/uni-auth/internal/mocks/servicemocks"
 	"github.com/bubalync/uni-auth/internal/service/auth"
 	"github.com/bubalync/uni-auth/internal/service/svcErrs"
-	"github.com/bubalync/uni-auth/pkg/logger"
 	"github.com/bubalync/uni-auth/pkg/validator"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -152,7 +151,7 @@ func TestAuthRoutes_SignUp(t *testing.T) {
 			},
 			inputBody: `{"email": "test@example.com", "password":"Qwerty!1"}`,
 			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
-				m.EXPECT().CreateUser(args.ctx, args.input).Return(uuid.Nil, svcErrs.ErrInternal)
+				m.EXPECT().CreateUser(args.ctx, args.input).Return(uuid.Nil, svcErrs.ErrCannotCreateUser)
 			},
 			wantStatusCode:  500,
 			wantRequestBody: `{"errors":{"message":"internal server error"}}`,
@@ -169,21 +168,144 @@ func TestAuthRoutes_SignUp(t *testing.T) {
 			as := servicemocks.NewMockAuth(ctrl)
 			tc.mockBehaviour(as, tc.args)
 
-			// Log
-			log := logger.New("local", "info")
-
 			// create test server
 			e := gin.New()
 
 			cv := validator.NewCustomValidator()
 
 			g := e.Group("/auth")
-			NewAuthRoutes(g, log, cv, as)
+			NewAuthRoutes(g, cv, as)
 			gin.SetMode(gin.ReleaseMode)
 
 			// create request
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/auth/sign-up", bytes.NewBufferString(tc.inputBody))
+
+			// execute request
+			e.ServeHTTP(w, req)
+
+			// check response
+			assert.Equal(t, tc.wantStatusCode, w.Code)
+			assert.Equal(t, tc.wantRequestBody, w.Body.String())
+		})
+	}
+}
+
+func TestAuthRoutes_SignIn(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		input auth.GenerateTokenInput
+	}
+
+	type MockBehaviour func(m *servicemocks.MockAuth, args args)
+
+	testCases := []struct {
+		name            string
+		args            args
+		inputBody       string
+		mockBehaviour   MockBehaviour
+		wantStatusCode  int
+		wantRequestBody string
+	}{
+		{
+			name: "OK",
+			args: args{
+				ctx: context.Background(),
+				input: auth.GenerateTokenInput{
+					Email:    "test@example.com",
+					Password: "Qwerty!1",
+				},
+			},
+			inputBody: `{"email":"test@example.com","password":"Qwerty!1"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+				m.EXPECT().GenerateToken(args.ctx, args.input).
+					Return(auth.GenerateTokenOutput{AccessToken: "1", RefreshToken: "2"}, nil)
+			},
+			wantStatusCode:  200,
+			wantRequestBody: `{"access_token":"1","refresh_token":"2"}`,
+		},
+		{
+			name:            "Invalid password: not provided",
+			args:            args{},
+			inputBody:       `{"email": "test@example.com"}`,
+			mockBehaviour:   func(m *servicemocks.MockAuth, args args) {},
+			wantStatusCode:  400,
+			wantRequestBody: `{"errors":{"Password":"Password is a required"}}`,
+		},
+		{
+			name:            "Invalid email: not provided",
+			args:            args{},
+			inputBody:       `{"password":"Qwerty!1"}`,
+			mockBehaviour:   func(m *servicemocks.MockAuth, args args) {},
+			wantStatusCode:  400,
+			wantRequestBody: `{"errors":{"Email":"Email is a required"}}`,
+		},
+		{
+			name: "Invalid email: too long",
+			args: args{},
+			inputBody: `{"email":"testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttestte` +
+				`sttesttesttesttesttesttesttesttesttesttesttesttesttesttesttetesttesttesttesttesttesttesttes` +
+				`sttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest@e.com","password":"Qwerty!1"}`,
+			mockBehaviour:   func(m *servicemocks.MockAuth, args args) {},
+			wantStatusCode:  400,
+			wantRequestBody: `{"errors":{"Email":"'Email' must be shorter than 150"}}`,
+		},
+		{
+			name: "Auth service error: invalid credentials",
+			args: args{
+				ctx: context.Background(),
+				input: auth.GenerateTokenInput{
+					Email:    "test@example.com",
+					Password: "123",
+				},
+			},
+			inputBody: `{"email": "test@example.com","password":"123"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+				m.EXPECT().GenerateToken(args.ctx, args.input).Return(auth.GenerateTokenOutput{}, svcErrs.ErrInvalidCredentials)
+			},
+			wantStatusCode:  401,
+			wantRequestBody: `{"errors":{"message":"invalid credentials"}}`,
+		},
+		{
+			name: "Internal server error",
+			args: args{
+				ctx: context.Background(),
+				input: auth.GenerateTokenInput{
+					Email:    "test@example.com",
+					Password: "Qwerty!1",
+				},
+			},
+			inputBody: `{"email": "test@example.com", "password":"Qwerty!1"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+				m.EXPECT().GenerateToken(args.ctx, args.input).Return(auth.GenerateTokenOutput{}, svcErrs.ErrCannotCreateUser)
+			},
+			wantStatusCode:  500,
+			wantRequestBody: `{"errors":{"message":"internal server error"}}`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// init deps
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// init service mock
+			as := servicemocks.NewMockAuth(ctrl)
+			tc.mockBehaviour(as, tc.args)
+
+			// create test server
+			gin.SetMode(gin.TestMode)
+			e := gin.New()
+
+			cv := validator.NewCustomValidator()
+
+			g := e.Group("/auth")
+			NewAuthRoutes(g, cv, as)
+
+			// create request
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/auth/sign-in", bytes.NewBufferString(tc.inputBody))
 
 			// execute request
 			e.ServeHTTP(w, req)

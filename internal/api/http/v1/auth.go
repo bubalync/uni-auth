@@ -6,22 +6,19 @@ import (
 	"github.com/bubalync/uni-auth/internal/service"
 	"github.com/bubalync/uni-auth/internal/service/auth"
 	"github.com/bubalync/uni-auth/internal/service/svcErrs"
-	"github.com/bubalync/uni-auth/pkg/logger/sl"
 	"github.com/bubalync/uni-auth/pkg/validator"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"log/slog"
 	"net/http"
 )
 
 type authRoutes struct {
 	as service.Auth
-	l  *slog.Logger
 	cv *validator.CustomValidator
 }
 
-func NewAuthRoutes(g *gin.RouterGroup, log *slog.Logger, cv *validator.CustomValidator, authService service.Auth) {
-	r := &authRoutes{authService, log, cv}
+func NewAuthRoutes(g *gin.RouterGroup, cv *validator.CustomValidator, authService service.Auth) {
+	r := &authRoutes{authService, cv}
 
 	g.POST("/sign-up", r.signUp)
 	g.POST("/sign-in", r.signIn)
@@ -49,9 +46,6 @@ type signUpResponse struct {
 // @Failure     500 {object} response.ErrResponse
 // @Router      /auth/sign-up [post]
 func (r *authRoutes) signUp(c *gin.Context) {
-	const op = "api.http.v1.auth.sign-up"
-	log := r.l.With(slog.String("op", op))
-
 	var req signUpRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -60,8 +54,6 @@ func (r *authRoutes) signUp(c *gin.Context) {
 	}
 
 	if errs := r.cv.ValidateStruct(req); errs != nil {
-		log.Error("Request validation error", sl.ErrMap(errs))
-
 		c.JSON(http.StatusBadRequest, response.ErrorMap(errs))
 		return
 	}
@@ -76,7 +68,7 @@ func (r *authRoutes) signUp(c *gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, response.Error(err.Error()))
+		c.JSON(http.StatusInternalServerError, response.ErrorInternal())
 		return
 	}
 
@@ -85,9 +77,58 @@ func (r *authRoutes) signUp(c *gin.Context) {
 	})
 }
 
+type signInRequest struct {
+	Email    string `json:"email"    validate:"required,email,min=5,max=150" minLength:"5" maxLength:"150" example:"email@example.com"`
+	Password string `json:"password" validate:"required"                     minLength:"8" maxLength:"32"  example:"YourV@lidPassw0rd!"`
+}
+
+type signInResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+// @Summary     Sign in
+// @Description Sign in
+// @Tags        auth
+// @Accept      json
+// @Produce     json
+// @Param       request body signInRequest true "Sign in payload"
+// @Success     200 {object} signInResponse
+// @Failure     400 {object} response.ErrResponse
+// @Failure     500 {object} response.ErrResponse
+// @Router      /auth/sign-in [post]
 func (r *authRoutes) signIn(c *gin.Context) {
-	//TODO implement me
-	panic("implement me")
+	var req signInRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.Error(err.Error()))
+		return
+	}
+
+	if errs := r.cv.ValidateStruct(req); errs != nil {
+		c.JSON(http.StatusBadRequest, response.ErrorMap(errs))
+		return
+	}
+
+	tokens, err := r.as.GenerateToken(c.Request.Context(), auth.GenerateTokenInput{
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	if err != nil {
+		if errors.Is(err, svcErrs.ErrInvalidCredentials) {
+			c.JSON(http.StatusUnauthorized, response.Error(err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, response.ErrorInternal())
+		return
+	}
+
+	c.JSON(http.StatusOK, signInResponse{
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+	})
+
 }
 
 func (r *userRoutes) resetPassword(c *gin.Context) {

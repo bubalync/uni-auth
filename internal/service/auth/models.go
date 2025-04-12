@@ -11,6 +11,11 @@ type (
 		Password string
 	}
 
+	GenerateTokenOutput struct {
+		AccessToken  string
+		RefreshToken string
+	}
+
 	ResetPasswordInput struct {
 		Email    string
 		Password string

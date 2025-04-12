@@ -51,8 +51,10 @@ type (
 	}
 
 	JWT struct {
-		SignKey  string        `yaml:"sign_key"  env:"JWT_SIGN_KEY"  env-required:"true"`
-		TokenTTL time.Duration `yaml:"token_ttl" env:"JWT_TOKEN_TTL" env-required:"true"`
+		AccessSignKey   string        `yaml:"access_sign_key"   env:"JWT_ACCESS_SIGN_KEY"   env-required:"true"`
+		AccessTokenTTL  time.Duration `yaml:"access_token_ttl"  env:"JWT_ACCESS_TOKEN_TTL"  env-required:"true"`
+		RefreshSignKey  string        `yaml:"refresh_sign_key"  env:"JWT_REFRESH_SIGN_KEY"  env-required:"true"`
+		RefreshTokenTTL time.Duration `yaml:"refresh_token_ttl" env:"JWT_REFRESH_TOKEN_TTL" env-required:"true"`
 	}
 
 	Redis struct {

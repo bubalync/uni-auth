@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/bubalync/uni-auth/internal/entity"
+	"github.com/bubalync/uni-auth/internal/lib/jwtgen"
 	"github.com/bubalync/uni-auth/internal/repo"
 	"github.com/bubalync/uni-auth/internal/service/auth"
 	"github.com/bubalync/uni-auth/internal/service/user"
@@ -16,7 +17,7 @@ import (
 type (
 	Auth interface {
 		CreateUser(ctx context.Context, input auth.CreateUserInput) (uuid.UUID, error)
-		GenerateToken(ctx context.Context, input auth.GenerateTokenInput) (string, error)
+		GenerateToken(ctx context.Context, input auth.GenerateTokenInput) (auth.GenerateTokenOutput, error)
 		ResetPassword(ctx context.Context, input auth.ResetPasswordInput) error
 		ParseToken(token string) (uuid.UUID, error)
 	}
@@ -32,12 +33,12 @@ type (
 
 type (
 	ServicesDependencies struct {
-		Repos  *repo.Repositories
-		Hasher hasher.PasswordHasher
-		Cache  redis.Cache
+		Repos          *repo.Repositories
+		Hasher         hasher.PasswordHasher
+		Cache          redis.Cache
+		TokenGenerator jwtgen.TokenGenerator
 
-		SignKey  string
-		TokenTTL time.Duration
+		RefreshTokenTTL time.Duration
 	}
 
 	Services struct {
@@ -48,7 +49,7 @@ type (
 
 func NewServices(log *slog.Logger, deps ServicesDependencies) *Services {
 	return &Services{
-		Auth: auth.New(log, deps.Repos.User, deps.Hasher, deps.SignKey, deps.TokenTTL),
+		Auth: auth.New(log, deps.Cache, deps.Repos.User, deps.Hasher, deps.TokenGenerator, deps.RefreshTokenTTL),
 		User: user.New(log, deps.Repos.User),
 	}
 }

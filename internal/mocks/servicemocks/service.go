@@ -59,10 +59,10 @@ func (mr *MockAuthMockRecorder) CreateUser(ctx, input any) *gomock.Call {
 }
 
 // GenerateToken mocks base method.
-func (m *MockAuth) GenerateToken(ctx context.Context, input auth.GenerateTokenInput) (string, error) {
+func (m *MockAuth) GenerateToken(ctx context.Context, input auth.GenerateTokenInput) (auth.GenerateTokenOutput, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GenerateToken", ctx, input)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(auth.GenerateTokenOutput)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -13,7 +13,8 @@ type (
 		Create(ctx context.Context, u entity.User) error
 		Delete(ctx context.Context, id uuid.UUID) error
 		ResetPassword(ctx context.Context, passwordHash []byte) error
-		Update(ctx context.Context, u entity.User) (string, error)
+		Update(ctx context.Context, u entity.User) error
+		UpdateLastLoginAttempt(ctx context.Context, id uuid.UUID) error
 		UserByEmail(ctx context.Context, email string) (entity.User, error)
 		UserByEmailIsExists(ctx context.Context, email string) (*bool, error)
 		UserByID(ctx context.Context, id uuid.UUID) (entity.User, error)

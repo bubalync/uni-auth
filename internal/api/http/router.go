@@ -2,6 +2,7 @@ package http
 
 import (
 	_ "github.com/bubalync/uni-auth/docs" // Swagger docs.
+	"github.com/bubalync/uni-auth/internal/api/http/middleware"
 	v1 "github.com/bubalync/uni-auth/internal/api/http/v1"
 	"github.com/bubalync/uni-auth/internal/config"
 	"github.com/bubalync/uni-auth/internal/service"
@@ -36,10 +37,11 @@ func NewRouter(handler *gin.Engine, cfg *config.Config, log *slog.Logger, servic
 	// Routes
 	authGroup := handler.Group("/auth")
 	{
-		v1.NewAuthRoutes(authGroup, log, cv, services.Auth)
+		v1.NewAuthRoutes(authGroup, cv, services.Auth)
 	}
 
-	v1Group := handler.Group("/api/v1")
+	authMiddleware := middleware.NewAuthMiddleware(services.Auth)
+	v1Group := handler.Group("/api/v1", authMiddleware.UserIdentity())
 	{
 		v1.NewUserRoutes(v1Group.Group("/users"), log, cv, services.User)
 	}

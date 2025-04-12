@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bubalync/uni-auth/internal/api/http"
 	"github.com/bubalync/uni-auth/internal/config"
+	"github.com/bubalync/uni-auth/internal/lib/jwtgen"
 	"github.com/bubalync/uni-auth/internal/repo"
 	"github.com/bubalync/uni-auth/internal/service"
 	"github.com/bubalync/uni-auth/pkg/hasher"
@@ -40,11 +41,16 @@ func Run(cfg *config.Config) {
 	// services
 	log.Info("Initializing services...")
 	deps := service.ServicesDependencies{
-		Repos:    repositories,
-		Hasher:   hasher.NewBcryptHasher(),
-		Cache:    redisClient,
-		SignKey:  cfg.JWT.SignKey,
-		TokenTTL: cfg.JWT.TokenTTL,
+		Repos:  repositories,
+		Hasher: hasher.NewBcryptHasher(),
+		Cache:  redisClient,
+		TokenGenerator: jwtgen.NewJwtTokenGenerator(
+			cfg.JWT.AccessSignKey,
+			cfg.JWT.RefreshSignKey,
+			cfg.JWT.AccessTokenTTL,
+			cfg.JWT.RefreshTokenTTL,
+		),
+		RefreshTokenTTL: cfg.JWT.RefreshTokenTTL,
 	}
 	services := service.NewServices(log, deps)
 
