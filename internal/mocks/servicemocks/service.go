@@ -88,6 +88,21 @@ func (mr *MockAuthMockRecorder) ParseToken(token any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseToken", reflect.TypeOf((*MockAuth)(nil).ParseToken), token)
 }
 
+// Refresh mocks base method.
+func (m *MockAuth) Refresh(ctx context.Context, token string) (auth.GenerateTokenOutput, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Refresh", ctx, token)
+	ret0, _ := ret[0].(auth.GenerateTokenOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Refresh indicates an expected call of Refresh.
+func (mr *MockAuthMockRecorder) Refresh(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refresh", reflect.TypeOf((*MockAuth)(nil).Refresh), ctx, token)
+}
+
 // ResetPassword mocks base method.
 func (m *MockAuth) ResetPassword(ctx context.Context, input auth.ResetPasswordInput) error {
 	m.ctrl.T.Helper()

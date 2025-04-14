@@ -22,7 +22,8 @@ func NewAuthRoutes(g *gin.RouterGroup, cv *validator.CustomValidator, authServic
 
 	g.POST("/sign-up", r.signUp)
 	g.POST("/sign-in", r.signIn)
-	g.POST("/reset-password", r.signIn)
+	g.POST("/refresh", r.refresh)
+	g.POST("/reset-password", r.resetPassword)
 }
 
 type signUpRequest struct {
@@ -95,6 +96,7 @@ type signInResponse struct {
 // @Param       request body signInRequest true "Sign in payload"
 // @Success     200 {object} signInResponse
 // @Failure     400 {object} response.ErrResponse
+// @Failure     401 {object} response.ErrResponse
 // @Failure     500 {object} response.ErrResponse
 // @Router      /auth/sign-in [post]
 func (r *authRoutes) signIn(c *gin.Context) {
@@ -128,10 +130,60 @@ func (r *authRoutes) signIn(c *gin.Context) {
 		AccessToken:  tokens.AccessToken,
 		RefreshToken: tokens.RefreshToken,
 	})
-
 }
 
-func (r *userRoutes) resetPassword(c *gin.Context) {
+type refreshRequest struct {
+	// Refresh token
+	Token string `json:"token" validate:"required"`
+}
+
+type refreshResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+// @Summary     Refresh tokens
+// @Description Refresh tokens by refresh-token
+// @Tags        auth
+// @Accept      json
+// @Produce     json
+// @Param       request body refreshRequest true "Refresh payload"
+// @Success     200 {object} refreshResponse
+// @Failure     400 {object} response.ErrResponse
+// @Failure     401 {object} response.ErrResponse
+// @Failure     500 {object} response.ErrResponse
+// @Router      /auth/refresh [post]
+func (r *authRoutes) refresh(c *gin.Context) {
+	var req refreshRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.Error(err.Error()))
+		return
+	}
+
+	if errs := r.cv.ValidateStruct(req); errs != nil {
+		c.JSON(http.StatusBadRequest, response.ErrorMap(errs))
+		return
+	}
+
+	tokens, err := r.as.Refresh(c.Request.Context(), req.Token)
+	if err != nil {
+		if errors.Is(err, svcErrs.ErrCannotParseToken) || errors.Is(err, svcErrs.ErrTokenIsExpired) {
+			c.JSON(http.StatusUnauthorized, response.Error(err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, response.ErrorInternal())
+		return
+	}
+
+	c.JSON(http.StatusOK, refreshResponse{
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+	})
+}
+
+func (r *authRoutes) resetPassword(c *gin.Context) {
 	//TODO implement me
 	panic("implement me")
 }

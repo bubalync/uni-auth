@@ -19,6 +19,7 @@ type (
 		CreateUser(ctx context.Context, input auth.CreateUserInput) (uuid.UUID, error)
 		GenerateToken(ctx context.Context, input auth.GenerateTokenInput) (auth.GenerateTokenOutput, error)
 		ResetPassword(ctx context.Context, input auth.ResetPasswordInput) error
+		Refresh(ctx context.Context, token string) (auth.GenerateTokenOutput, error)
 		ParseToken(token string) (uuid.UUID, error)
 	}
 

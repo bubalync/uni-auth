@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/bubalync/uni-auth/internal/entity"
 	"github.com/bubalync/uni-auth/internal/lib/jwtgen"
 	"github.com/bubalync/uni-auth/internal/repo"
@@ -18,7 +19,7 @@ import (
 )
 
 const (
-	cacheRefreshKeyPrefix = "refresh:"
+	refreshKeyTemplate = "refresh:%s"
 )
 
 type Service struct {
@@ -91,6 +92,34 @@ func (s *Service) GenerateToken(ctx context.Context, input GenerateTokenInput) (
 		return GenerateTokenOutput{}, svcErrs.ErrInvalidCredentials
 	}
 
+	return s.generateTokens(ctx, log, user)
+}
+
+func (s *Service) Refresh(ctx context.Context, token string) (GenerateTokenOutput, error) {
+	const op = "service.auth.Refresh"
+	log := s.log.With(slog.String("op", op))
+
+	claims, err := s.tokenGenerator.ParseRefreshToken(token)
+	if err != nil {
+		log.Error("failed to parse refresh token", sl.Err(err))
+		return GenerateTokenOutput{}, svcErrs.ErrCannotParseToken
+	}
+
+	stored, err := s.cache.Get(ctx, fmt.Sprintf(refreshKeyTemplate, claims.UserId))
+	if err != nil {
+		log.Error("failed to refresh token", sl.Err(err))
+		return GenerateTokenOutput{}, svcErrs.ErrTokenIsExpired
+	}
+
+	if token != stored {
+		log.Error("stored and input token is not equal")
+		return GenerateTokenOutput{}, svcErrs.ErrTokenIsExpired
+	}
+
+	return s.generateTokens(ctx, log, entity.User{Id: claims.UserId, Email: claims.Email})
+}
+
+func (s *Service) generateTokens(ctx context.Context, log *slog.Logger, user entity.User) (GenerateTokenOutput, error) {
 	accessToken, err := s.tokenGenerator.GenerateAccessToken(user)
 	if err != nil {
 		log.Error("failed to generate access token", sl.Err(err))
@@ -103,11 +132,14 @@ func (s *Service) GenerateToken(ctx context.Context, input GenerateTokenInput) (
 		return GenerateTokenOutput{}, svcErrs.ErrCannotSignToken
 	}
 
+	//TODO delete field and func`s
 	if err = s.userRepo.UpdateLastLoginAttempt(ctx, user.Id); err != nil {
 		log.Error("failed to update last_login_attempt", sl.Err(err))
 	}
 
-	err = s.cache.Set(ctx, cacheRefreshKeyPrefix+user.Id.String(), refreshToken, s.refreshTokenTTL)
+	// TODO solve the problem with authentication from two different realms.
+	//  storing token as a key?
+	err = s.cache.Set(ctx, fmt.Sprintf(refreshKeyTemplate, user.Id), refreshToken, s.refreshTokenTTL)
 	if err != nil {
 		log.Error("failed to save refresh token to cache", sl.Err(err))
 		return GenerateTokenOutput{}, svcErrs.ErrAccessToCache

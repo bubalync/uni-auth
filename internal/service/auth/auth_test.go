@@ -437,3 +437,175 @@ func TestAuthService_ParseToken(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthService_Refresh(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		token string
+	}
+
+	type MockBehavior func(o *repomocks.MockUser, h *utilmocks.MockPasswordHasher, c *redismocks.MockCache, g *utilmocks.MockTokenGenerator, args args)
+
+	testCases := []struct {
+		name         string
+		args         args
+		mockBehavior MockBehavior
+		wantErr      bool
+		err          error
+	}{
+		{
+			name: "OK",
+			args: args{
+				ctx:   context.Background(),
+				token: "valid_token",
+			},
+			mockBehavior: func(r *repomocks.MockUser, h *utilmocks.MockPasswordHasher, c *redismocks.MockCache, g *utilmocks.MockTokenGenerator, args args) {
+				claims := &jwtgen.Claims{UserId: uuid.New(), Email: "test@example.com"}
+				user := entity.User{Id: claims.UserId, Email: claims.Email}
+
+				g.EXPECT().ParseRefreshToken(args.token).Return(claims, nil)
+				c.EXPECT().Get(args.ctx, "refresh:"+user.Id.String()).Return(args.token, nil)
+				g.EXPECT().GenerateAccessToken(user).Return("access_token", nil)
+				g.EXPECT().GenerateRefreshToken(user).Return("refresh_token", nil)
+				r.EXPECT().UpdateLastLoginAttempt(args.ctx, user.Id).Return(nil)
+				c.EXPECT().Set(args.ctx, "refresh:"+user.Id.String(), "refresh_token", refreshTokenTTL).Return(nil)
+			},
+			wantErr: false,
+			err:     nil,
+		},
+		{
+			name: "cannot parse refresh token error",
+			args: args{
+				ctx:   context.Background(),
+				token: "invalid_token",
+			},
+			mockBehavior: func(r *repomocks.MockUser, h *utilmocks.MockPasswordHasher, c *redismocks.MockCache, g *utilmocks.MockTokenGenerator, args args) {
+				g.EXPECT().ParseRefreshToken(args.token).Return(nil, errors.New("some error"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrCannotParseToken,
+		},
+		{
+			name: "get from cache: some error",
+			args: args{
+				ctx:   context.Background(),
+				token: "valid_token",
+			},
+			mockBehavior: func(r *repomocks.MockUser, h *utilmocks.MockPasswordHasher, c *redismocks.MockCache, g *utilmocks.MockTokenGenerator, args args) {
+				claims := &jwtgen.Claims{UserId: uuid.New(), Email: "test@example.com"}
+				user := entity.User{Id: claims.UserId, Email: claims.Email}
+
+				g.EXPECT().ParseRefreshToken(args.token).Return(claims, nil)
+				c.EXPECT().Get(args.ctx, "refresh:"+user.Id.String()).Return("another valid token", nil)
+			},
+			wantErr: true,
+			err:     svcErrs.ErrTokenIsExpired,
+		},
+		{
+			name: "input and stored token is not equal",
+			args: args{
+				ctx:   context.Background(),
+				token: "valid_token",
+			},
+			mockBehavior: func(r *repomocks.MockUser, h *utilmocks.MockPasswordHasher, c *redismocks.MockCache, g *utilmocks.MockTokenGenerator, args args) {
+				claims := &jwtgen.Claims{UserId: uuid.New(), Email: "test@example.com"}
+				user := entity.User{Id: claims.UserId, Email: claims.Email}
+
+				g.EXPECT().ParseRefreshToken(args.token).Return(claims, nil)
+				c.EXPECT().Get(args.ctx, "refresh:"+user.Id.String()).Return("", errors.New("some error"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrTokenIsExpired,
+		},
+		{
+			name: "generate access token error",
+			args: args{
+				ctx:   context.Background(),
+				token: "valid_token",
+			},
+			mockBehavior: func(r *repomocks.MockUser, h *utilmocks.MockPasswordHasher, c *redismocks.MockCache, g *utilmocks.MockTokenGenerator, args args) {
+				claims := &jwtgen.Claims{UserId: uuid.New(), Email: "test@example.com"}
+				user := entity.User{Id: claims.UserId, Email: claims.Email}
+
+				g.EXPECT().ParseRefreshToken(args.token).Return(claims, nil)
+				c.EXPECT().Get(args.ctx, "refresh:"+user.Id.String()).Return(args.token, nil)
+				g.EXPECT().GenerateAccessToken(user).Return("", errors.New("some error"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrCannotSignToken,
+		},
+		{
+			name: "generate refresh token error",
+			args: args{
+				ctx:   context.Background(),
+				token: "valid_token",
+			},
+			mockBehavior: func(r *repomocks.MockUser, h *utilmocks.MockPasswordHasher, c *redismocks.MockCache, g *utilmocks.MockTokenGenerator, args args) {
+				claims := &jwtgen.Claims{UserId: uuid.New(), Email: "test@example.com"}
+				user := entity.User{Id: claims.UserId, Email: claims.Email}
+
+				g.EXPECT().ParseRefreshToken(args.token).Return(claims, nil)
+				c.EXPECT().Get(args.ctx, "refresh:"+user.Id.String()).Return(args.token, nil)
+				g.EXPECT().GenerateAccessToken(user).Return("access_token", nil)
+				g.EXPECT().GenerateRefreshToken(user).Return("", errors.New("some error"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrCannotSignToken,
+		},
+		{
+			name: "save to cache: refresh token error",
+			args: args{
+				ctx:   context.Background(),
+				token: "valid_token",
+			},
+			mockBehavior: func(r *repomocks.MockUser, h *utilmocks.MockPasswordHasher, c *redismocks.MockCache, g *utilmocks.MockTokenGenerator, args args) {
+				claims := &jwtgen.Claims{UserId: uuid.New(), Email: "test@example.com"}
+				user := entity.User{Id: claims.UserId, Email: claims.Email}
+
+				g.EXPECT().ParseRefreshToken(args.token).Return(claims, nil)
+				c.EXPECT().Get(args.ctx, "refresh:"+user.Id.String()).Return(args.token, nil)
+				g.EXPECT().GenerateAccessToken(user).Return("access_token", nil)
+				g.EXPECT().GenerateRefreshToken(user).Return("refresh_token", nil)
+				r.EXPECT().UpdateLastLoginAttempt(args.ctx, user.Id).Return(errors.New("some update error"))
+				c.EXPECT().Set(args.ctx, "refresh:"+user.Id.String(), "refresh_token", refreshTokenTTL).Return(errors.New("some error"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrAccessToCache,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// init deps
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// init repo mock
+			repo := repomocks.NewMockUser(ctrl)
+			hasher := utilmocks.NewMockPasswordHasher(ctrl)
+			cache := redismocks.NewMockCache(ctrl)
+			tokenGenerator := utilmocks.NewMockTokenGenerator(ctrl)
+
+			tc.mockBehavior(repo, hasher, cache, tokenGenerator, tc.args)
+
+			// Log
+			log := logger.New("local", "info")
+
+			// init service
+			s := New(log, cache, repo, hasher, tokenGenerator, refreshTokenTTL)
+
+			// run test
+			got, err := s.Refresh(tc.args.ctx, tc.args.token)
+			if tc.wantErr {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tc.err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, got)
+			assert.NotEqual(t, "", got.AccessToken)
+			assert.NotEqual(t, "", got.RefreshToken)
+		})
+	}
+}

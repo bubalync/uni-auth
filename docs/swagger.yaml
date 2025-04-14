@@ -7,6 +7,21 @@ definitions:
           type: string
         type: object
     type: object
+  v1.refreshRequest:
+    properties:
+      token:
+        description: Refresh token
+        type: string
+    required:
+    - token
+    type: object
+  v1.refreshResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
   v1.signInRequest:
     properties:
       email:
@@ -59,6 +74,40 @@ info:
   title: Universal authorization service API
   version: "1.0"
 paths:
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh tokens by refresh-token
+      parameters:
+      - description: Refresh payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.refreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.refreshResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+      summary: Refresh tokens
+      tags:
+      - auth
   /auth/sign-in:
     post:
       consumes:
@@ -80,6 +129,10 @@ paths:
             $ref: '#/definitions/v1.signInResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/response.ErrResponse'
         "500":
