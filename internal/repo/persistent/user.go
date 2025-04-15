@@ -83,7 +83,7 @@ func (r *UserRepo) UserByEmail(ctx context.Context, email string) (entity.User, 
 	sql, args, _ := r.Builder.
 		Select("id, email, password_hash, name, is_active, last_login_attempt, created_at, updated_at").
 		From("users").
-		Where("email = ?", email).
+		Where("LOWER(email) = LOWER(?)", email).
 		ToSql()
 
 	var user entity.User
