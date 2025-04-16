@@ -156,15 +156,15 @@ func (s *Service) ResetPassword(ctx context.Context, input ResetPasswordInput) e
 	panic("implement me")
 }
 
-func (s *Service) ParseToken(token string) (uuid.UUID, error) {
+func (s *Service) ParseToken(token string) (*jwtgen.Claims, error) {
 	const op = "service.auth.ParseToken"
 	log := s.log.With(slog.String("op", op))
 
 	claims, err := s.tokenGenerator.ParseAccessToken(token)
 	if err != nil {
 		log.Error("failed to parse access token", sl.Err(err))
-		return uuid.Nil, svcErrs.ErrCannotParseToken
+		return nil, svcErrs.ErrCannotParseToken
 	}
 
-	return claims.UserId, nil
+	return claims, nil
 }

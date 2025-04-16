@@ -19,6 +19,7 @@ type (
 		Swagger Swagger `yaml:"swagger"`
 		JWT     JWT     `yaml:"jwt"`
 		Redis   Redis   `yaml:"redis"`
+		GRPC    GRPC    `yaml:"grpc"`
 	}
 
 	App struct {
@@ -60,6 +61,10 @@ type (
 	Redis struct {
 		Host string `yaml:"host"        env:"REDIS_HOST" env-required:"true"`
 		Db   int    `yaml:"db"          env:"REDIS_DB" env-required:"true"`
+	}
+
+	GRPC struct {
+		Port int `yaml:"port"         env:"GRPC_PORT" env-required:"true"`
 	}
 )
 

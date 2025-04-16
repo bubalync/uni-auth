@@ -1,0 +1,3 @@
+[submodule "api/uni-auth-proto"]
+	path = api/uni-auth-proto
+	url = https://github.com/bubalync/uni-auth-proto.git

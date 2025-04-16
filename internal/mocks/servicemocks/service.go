@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	entity "github.com/bubalync/uni-auth/internal/entity"
+	jwtgen "github.com/bubalync/uni-auth/internal/lib/jwtgen"
 	auth "github.com/bubalync/uni-auth/internal/service/auth"
 	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
@@ -74,10 +75,10 @@ func (mr *MockAuthMockRecorder) GenerateToken(ctx, input any) *gomock.Call {
 }
 
 // ParseToken mocks base method.
-func (m *MockAuth) ParseToken(token string) (uuid.UUID, error) {
+func (m *MockAuth) ParseToken(token string) (*jwtgen.Claims, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ParseToken", token)
-	ret0, _ := ret[0].(uuid.UUID)
+	ret0, _ := ret[0].(*jwtgen.Claims)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

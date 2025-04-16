@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/bubalync/uni-auth/internal/api/grpc"
 	"github.com/bubalync/uni-auth/internal/api/http"
 	"github.com/bubalync/uni-auth/internal/config"
 	"github.com/bubalync/uni-auth/internal/lib/jwtgen"
@@ -54,6 +55,13 @@ func Run(cfg *config.Config) {
 	}
 	services := service.NewServices(log, deps)
 
+	// gRPC server
+	gRPCServer := grpc.NewServer(log, services, cfg.GRPC.Port)
+
+	go func() {
+		gRPCServer.MustRun()
+	}()
+
 	// Gin handler
 	log.Info("Initializing handlers and routes...")
 	handler := gin.New()
@@ -96,4 +104,5 @@ func Run(cfg *config.Config) {
 		log.Error("app - Run - redis.Close:", sl.Err(err))
 	}
 
+	gRPCServer.Stop()
 }

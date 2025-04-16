@@ -31,12 +31,12 @@ func (m *AuthMiddleware) UserIdentity() gin.HandlerFunc {
 
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 
-		uid, err := m.authService.ParseToken(token)
+		claims, err := m.authService.ParseToken(token)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, response.Error(response.ErrInvalidToken.Error()))
 			return
 		}
-		c.Set(UserIdKey, uid)
+		c.Set(UserIdKey, claims.UserId)
 		c.Next()
 	}
 }

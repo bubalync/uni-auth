@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"errors"
+	"github.com/bubalync/uni-auth/internal/lib/jwtgen"
 	"github.com/bubalync/uni-auth/internal/mocks/servicemocks"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -28,7 +29,8 @@ func TestUserIdentity(t *testing.T) {
 			name:        "OK",
 			accessToken: `Bearer valid_access_token`,
 			mockBehaviour: func(a *servicemocks.MockAuth) {
-				a.EXPECT().ParseToken("valid_access_token").Return(uuid.MustParse("0148edcd-e2a0-48b8-a47a-c6de5bbe4ed5"), nil)
+				claims := &jwtgen.Claims{UserId: uuid.MustParse("0148edcd-e2a0-48b8-a47a-c6de5bbe4ed5")}
+				a.EXPECT().ParseToken("valid_access_token").Return(claims, nil)
 			},
 			wantStatusCode:   200,
 			wantResponseBody: `{"user_id":"0148edcd-e2a0-48b8-a47a-c6de5bbe4ed5"}`,
@@ -51,7 +53,7 @@ func TestUserIdentity(t *testing.T) {
 			name:        "auth service some error",
 			accessToken: `Bearer valid_access_token`,
 			mockBehaviour: func(a *servicemocks.MockAuth) {
-				a.EXPECT().ParseToken("valid_access_token").Return(uuid.Nil, errors.New("some error"))
+				a.EXPECT().ParseToken("valid_access_token").Return(nil, errors.New("some error"))
 			},
 			wantStatusCode:   401,
 			wantResponseBody: `{"errors":{"message":"invalid token"}}`,

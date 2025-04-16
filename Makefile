@@ -2,6 +2,10 @@
 #include .env
 #export
 
+LOCAL_BIN:=$(CURDIR)/bin
+PROTO_DIR=api/uni-auth-proto/proto/auth/v1
+OUT_PROTO_GEN_DIR=internal/proto/v1
+
 run-local:
 	go run cmd/app/main.go --config ./config/local.yaml
 .PHONY: local
@@ -33,11 +37,29 @@ cover-html: ### run test with coverage and open html report
 	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
 	rm coverage.out
-.PHONY: coverage-html
+.PHONY: cover-html
 
 cover: ### run test with coverage
 	go test -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out
 	rm coverage.out
-.PHONY: coverage
+.PHONY: cover
 
+#bin-deps: ### install tools
+#    GOBIN=$(LOCAL_BIN) go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+#    GOBIN=$(LOCAL_BIN) go install github.com/golang/mock/mockgen@latest
+#    GOBIN=$(LOCAL_BIN) go install go.uber.org/mock/mockgen@latest
+#    GOBIN=$(LOCAL_BIN) go install github.com/swaggo/swag/cmd/swag@latest
+#    GOBIN=$(LOCAL_BIN) go install github.com/daixiang0/gci@latest
+#    GOBIN=$(LOCAL_BIN) go install mvdan.cc/gofumpt@latest
+#    GOBIN=$(LOCAL_BIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+#    GOBIN=$(LOCAL_BIN) go install golang.org/x/vuln/cmd/govulncheck@latest
+#.PHONY: bin-deps
+
+protoc: # gen from submodule: uni-auth-proto
+	protoc \
+		--proto_path=$(PROTO_DIR) \
+		--go_out=$(OUT_PROTO_GEN_DIR) --go_opt=paths=source_relative \
+		--go-grpc_out=$(OUT_PROTO_GEN_DIR) --go-grpc_opt=paths=source_relative \
+		$(PROTO_DIR)/auth.proto
+.PHONY: protoc
