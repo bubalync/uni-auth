@@ -5,6 +5,7 @@ import (
 	"github.com/bubalync/uni-auth/internal/api/grpc"
 	"github.com/bubalync/uni-auth/internal/api/http"
 	"github.com/bubalync/uni-auth/internal/config"
+	"github.com/bubalync/uni-auth/internal/lib/email"
 	"github.com/bubalync/uni-auth/internal/lib/jwtgen"
 	"github.com/bubalync/uni-auth/internal/repo"
 	"github.com/bubalync/uni-auth/internal/service"
@@ -52,6 +53,13 @@ func Run(cfg *config.Config) {
 			cfg.JWT.RefreshTokenTTL,
 		),
 		RefreshTokenTTL: cfg.JWT.RefreshTokenTTL,
+		EmailSender: email.NewSmtpSender(
+			cfg.EmailSender.SMTPHost,
+			cfg.EmailSender.SMTPPort,
+			cfg.EmailSender.Username,
+			cfg.EmailSender.Password,
+			cfg.EmailSender.From,
+		),
 	}
 	services := service.NewServices(log, deps)
 

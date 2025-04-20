@@ -70,20 +70,6 @@ func (mr *MockUserMockRecorder) Delete(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUser)(nil).Delete), ctx, id)
 }
 
-// ResetPassword mocks base method.
-func (m *MockUser) ResetPassword(ctx context.Context, passwordHash []byte) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResetPassword", ctx, passwordHash)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ResetPassword indicates an expected call of ResetPassword.
-func (mr *MockUserMockRecorder) ResetPassword(ctx, passwordHash any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockUser)(nil).ResetPassword), ctx, passwordHash)
-}
-
 // Update mocks base method.
 func (m *MockUser) Update(ctx context.Context, u entity.User) error {
 	m.ctrl.T.Helper()
@@ -110,6 +96,20 @@ func (m *MockUser) UpdateLastLoginAttempt(ctx context.Context, id uuid.UUID) err
 func (mr *MockUserMockRecorder) UpdateLastLoginAttempt(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateLastLoginAttempt", reflect.TypeOf((*MockUser)(nil).UpdateLastLoginAttempt), ctx, id)
+}
+
+// UpdatePassword mocks base method.
+func (m *MockUser) UpdatePassword(ctx context.Context, email string, password []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePassword", ctx, email, password)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePassword indicates an expected call of UpdatePassword.
+func (mr *MockUserMockRecorder) UpdatePassword(ctx, email, password any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePassword", reflect.TypeOf((*MockUser)(nil).UpdatePassword), ctx, email, password)
 }
 
 // UserByEmail mocks base method.

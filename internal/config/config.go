@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"time"
@@ -11,15 +12,16 @@ import (
 
 type (
 	Config struct {
-		Env     string  `yaml:"env" env:"ENV" env-default:"local"`
-		App     App     `yaml:"app"`
-		Log     Log     `yaml:"log"`
-		PG      PG      `yaml:"pg"`
-		HTTP    HTTP    `yaml:"http"`
-		Swagger Swagger `yaml:"swagger"`
-		JWT     JWT     `yaml:"jwt"`
-		Redis   Redis   `yaml:"redis"`
-		GRPC    GRPC    `yaml:"grpc"`
+		Env         string      `yaml:"env" env:"ENV" env-default:"local"`
+		App         App         `yaml:"app"`
+		Log         Log         `yaml:"log"`
+		PG          PG          `yaml:"pg"`
+		HTTP        HTTP        `yaml:"http"`
+		Swagger     Swagger     `yaml:"swagger"`
+		JWT         JWT         `yaml:"jwt"`
+		Redis       Redis       `yaml:"redis"`
+		GRPC        GRPC        `yaml:"grpc"`
+		EmailSender EmailSender `yaml:"email_sender"`
 	}
 
 	App struct {
@@ -33,12 +35,6 @@ type (
 	PG struct {
 		Url     string `yaml:"url"      env:"PG_URL"      env-required:"true"`
 		PoolMax int    `yaml:"pool_max" env:"PG_POOL_MAX" env-required:"true"`
-
-		//host     string `yaml:"host" env:"PG_HOST" env-default:"localhost"`
-		//port     int    `yaml:"port" env:"PG_PORT" env-default:"5432"`
-		//user     string `yaml:"user" env:"PG_USER" env-required:"true"`
-		//password string `yaml:"password" env:"PG_PASSWORD" env-required:"true"`
-		//dbName   string `yaml:"db_name" env:"PG_DB_NAME"`
 	}
 
 	HTTP struct {
@@ -66,9 +62,22 @@ type (
 	GRPC struct {
 		Port int `yaml:"port"         env:"GRPC_PORT" env-required:"true"`
 	}
+
+	EmailSender struct {
+		SMTPHost string `yaml:"smtp_host"   env:"ES_SMTP_HOST"        env-required:"true"`
+		SMTPPort string `yaml:"smtp_port"   env:"ES_SMTP_PORT"        env-required:"true"`
+		From     string `yaml:"email_alias" env:"ES_SMTP_EMAIL_ALIAS" env-required:"true"`
+		Username string `env:"ES_SMTP_USERNAME" env-required:"true"`
+		Password string `env:"ES_SMTP_PASSWORD" env-required:"true"`
+	}
 )
 
 func NewConfig() *Config {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	path := fetchConfigPath()
 	fmt.Println(path)
 	if path == "" {

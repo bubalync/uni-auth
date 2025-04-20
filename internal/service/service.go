@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"github.com/bubalync/uni-auth/internal/entity"
+	"github.com/bubalync/uni-auth/internal/lib/email"
 	"github.com/bubalync/uni-auth/internal/lib/jwtgen"
 	"github.com/bubalync/uni-auth/internal/repo"
 	"github.com/bubalync/uni-auth/internal/service/auth"
@@ -19,6 +20,7 @@ type (
 		CreateUser(ctx context.Context, input auth.CreateUserInput) (uuid.UUID, error)
 		GenerateToken(ctx context.Context, input auth.GenerateTokenInput) (auth.GenerateTokenOutput, error)
 		ResetPassword(ctx context.Context, input auth.ResetPasswordInput) error
+		RecoveryPassword(ctx context.Context, input auth.RecoveryPasswordInput) error
 		Refresh(ctx context.Context, token string) (auth.GenerateTokenOutput, error)
 		ParseToken(token string) (*jwtgen.Claims, error)
 	}
@@ -38,6 +40,7 @@ type (
 		Hasher         hasher.PasswordHasher
 		Cache          redis.Cache
 		TokenGenerator jwtgen.TokenGenerator
+		EmailSender    email.Sender
 
 		RefreshTokenTTL time.Duration
 	}
@@ -50,7 +53,15 @@ type (
 
 func NewServices(log *slog.Logger, deps ServicesDependencies) *Services {
 	return &Services{
-		Auth: auth.New(log, deps.Cache, deps.Repos.User, deps.Hasher, deps.TokenGenerator, deps.RefreshTokenTTL),
+		Auth: auth.New(
+			log,
+			deps.Cache,
+			deps.Repos.User,
+			deps.Hasher,
+			deps.TokenGenerator,
+			deps.EmailSender,
+			deps.RefreshTokenTTL,
+		),
 		User: user.New(log, deps.Repos.User),
 	}
 }

@@ -9,11 +9,6 @@ log:
 pg:
   url: "postgres://postgres:postgres@localhost:5432/uni-auth"
   pool_max: 2
-#  user: "postgres"
-#  password: "postgres"
-#  host: "localhost"
-#  port: 5432
-#  db_name: "postgres"
 
 http:
   port: 8080
@@ -36,3 +31,8 @@ jwt:
 redis:
   host: "localhost:6379"
   db: 1
+
+email_sender:
+  smtp_host: "smtp.gmail.com"
+  smtp_port: "587"
+  email_alias: "no-reply@uni-auth.com"

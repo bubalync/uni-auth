@@ -16,13 +16,13 @@ import (
 	"testing"
 )
 
+const passwordErrMsg = `{"errors":{"Password":"Password must be between 8 and 32 in length, contain at least 1 lowercase, 1 uppercase, 1 digits, and 1 special characters (!@#$%^\u0026*)"}}`
+
 func TestAuthRoutes_SignUp(t *testing.T) {
 	type args struct {
 		ctx   context.Context
 		input auth.CreateUserInput
 	}
-
-	const passwordErrMsg = `{"errors":{"Password":"Password must be between 8 and 32 in length, contain at least 1 lowercase, 1 uppercase, 1 digits, and 1 special characters (!@#$%^\u0026*)"}}`
 
 	type MockBehaviour func(m *servicemocks.MockAuth, args args)
 
@@ -418,6 +418,212 @@ func TestAuthRoutes_Refresh(t *testing.T) {
 			// create request
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodPost, "/auth/refresh", bytes.NewBufferString(tc.inputBody))
+
+			// execute request
+			e.ServeHTTP(w, req)
+
+			// check response
+			assert.Equal(t, tc.wantStatusCode, w.Code)
+			assert.Equal(t, tc.wantResponseBody, w.Body.String())
+		})
+	}
+}
+
+func TestAuthRoutes_ResetPassword(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		input auth.ResetPasswordInput
+	}
+
+	type MockBehaviour func(m *servicemocks.MockAuth, args args)
+
+	testCases := []struct {
+		name             string
+		args             args
+		inputBody        string
+		mockBehaviour    MockBehaviour
+		wantStatusCode   int
+		wantResponseBody string
+	}{
+		{
+			name: "OK",
+			args: args{
+				ctx:   context.Background(),
+				input: auth.ResetPasswordInput{Email: "test@example.com"},
+			},
+			inputBody: `{"email":"test@example.com"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+				m.EXPECT().ResetPassword(args.ctx, args.input).Return(nil)
+			},
+			wantStatusCode:   200,
+			wantResponseBody: "reset password email sent successfully",
+		},
+		{
+			name:             "Invalid email: not provided",
+			args:             args{},
+			inputBody:        `{"email":""}`,
+			mockBehaviour:    func(m *servicemocks.MockAuth, args args) {},
+			wantStatusCode:   400,
+			wantResponseBody: `{"errors":{"Email":"Email is a required"}}`,
+		},
+		{
+			name:      "Auth service error: invalid email",
+			args:      args{},
+			inputBody: `{"email":"email"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+			},
+			wantStatusCode:   400,
+			wantResponseBody: `{"errors":{"Email":"'Email' is not a valid email format"}}`,
+		},
+		{
+			name: "Auth service error: user not found",
+			args: args{
+				ctx:   context.Background(),
+				input: auth.ResetPasswordInput{Email: "test@example.com"},
+			},
+			inputBody: `{"email":"test@example.com"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+				m.EXPECT().ResetPassword(args.ctx, args.input).Return(svcErrs.ErrUserNotFound)
+			},
+			wantStatusCode:   404,
+			wantResponseBody: `{"errors":{"message":"user not found"}}`,
+		},
+		{
+			name: "Auth service error: Internal server error",
+			args: args{
+				ctx:   context.Background(),
+				input: auth.ResetPasswordInput{Email: "test@example.com"},
+			},
+			inputBody: `{"email":"test@example.com"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+				m.EXPECT().ResetPassword(args.ctx, args.input).Return(svcErrs.ErrSendResetPasswordEmail)
+			},
+			wantStatusCode:   500,
+			wantResponseBody: `{"errors":{"message":"internal server error"}}`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// init deps
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// init service mock
+			as := servicemocks.NewMockAuth(ctrl)
+			tc.mockBehaviour(as, tc.args)
+
+			// create test server
+			gin.SetMode(gin.TestMode)
+			e := gin.New()
+
+			cv := validator.NewCustomValidator()
+
+			g := e.Group("/auth")
+			NewAuthRoutes(g, cv, as)
+
+			// create request
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/auth/reset-password", bytes.NewBufferString(tc.inputBody))
+
+			// execute request
+			e.ServeHTTP(w, req)
+
+			// check response
+			assert.Equal(t, tc.wantStatusCode, w.Code)
+			assert.Equal(t, tc.wantResponseBody, w.Body.String())
+		})
+	}
+}
+
+func TestAuthRoutes_RecoveryPassword(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		input auth.RecoveryPasswordInput
+	}
+
+	type MockBehaviour func(m *servicemocks.MockAuth, args args)
+
+	testCases := []struct {
+		name             string
+		args             args
+		inputBody        string
+		mockBehaviour    MockBehaviour
+		wantStatusCode   int
+		wantResponseBody string
+	}{
+		{
+			name: "OK",
+			args: args{
+				ctx:   context.Background(),
+				input: auth.RecoveryPasswordInput{Token: "reset", Password: "Qwerty!1"},
+			},
+			inputBody: `{"token":"reset","password":"Qwerty!1"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+				m.EXPECT().RecoveryPassword(args.ctx, args.input).Return(nil)
+			},
+			wantStatusCode:   200,
+			wantResponseBody: "password updated successfully",
+		},
+		{
+			name:      "password invalid",
+			args:      args{},
+			inputBody: `{"token":"reset","password":"Qwerty"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+			},
+			wantStatusCode:   400,
+			wantResponseBody: passwordErrMsg,
+		},
+		{
+			name: "Auth service error: token is expired",
+			args: args{
+				ctx:   context.Background(),
+				input: auth.RecoveryPasswordInput{Token: "reset", Password: "Qwerty!1"},
+			},
+			inputBody: `{"token":"reset","password":"Qwerty!1"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+				m.EXPECT().RecoveryPassword(args.ctx, args.input).Return(svcErrs.ErrTokenIsExpired)
+			},
+			wantStatusCode:   403,
+			wantResponseBody: `{"errors":{"message":"token is expired"}}`,
+		},
+		{
+			name: "Auth service error: Internal server error",
+			args: args{
+				ctx:   context.Background(),
+				input: auth.RecoveryPasswordInput{Token: "reset", Password: "Qwerty!1"},
+			},
+			inputBody: `{"token":"reset","password":"Qwerty!1"}`,
+			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
+				m.EXPECT().RecoveryPassword(args.ctx, args.input).Return(svcErrs.ErrCannotUpdateUser)
+			},
+			wantStatusCode:   500,
+			wantResponseBody: `{"errors":{"message":"internal server error"}}`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// init deps
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// init service mock
+			as := servicemocks.NewMockAuth(ctrl)
+			tc.mockBehaviour(as, tc.args)
+
+			// create test server
+			gin.SetMode(gin.TestMode)
+			e := gin.New()
+
+			cv := validator.NewCustomValidator()
+
+			g := e.Group("/auth")
+			NewAuthRoutes(g, cv, as)
+
+			// create request
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodPost, "/auth/recovery-password", bytes.NewBufferString(tc.inputBody))
 
 			// execute request
 			e.ServeHTTP(w, req)

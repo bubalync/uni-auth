@@ -24,6 +24,7 @@ func NewAuthRoutes(g *gin.RouterGroup, cv *validator.CustomValidator, authServic
 	g.POST("/sign-in", r.signIn)
 	g.POST("/refresh", r.refresh)
 	g.POST("/reset-password", r.resetPassword)
+	g.POST("/recovery-password", r.recoveryPassword)
 }
 
 type signUpRequest struct {
@@ -183,7 +184,87 @@ func (r *authRoutes) refresh(c *gin.Context) {
 	})
 }
 
+type resetPasswordRequest struct {
+	Email string `json:"email"  validate:"required,email"`
+}
+
+// @Summary     Reset password
+// @Description Password reset request
+// @Tags        auth
+// @Accept      json
+// @Produce     json
+// @Param       request body resetPasswordRequest true "Reset password payload"
+// @Success     200 {string} string
+// @Failure     400 {object} response.ErrResponse
+// @Failure     500 {object} response.ErrResponse
+// @Router      /auth/reset-password [post]
 func (r *authRoutes) resetPassword(c *gin.Context) {
-	//TODO implement me
-	panic("implement me")
+	var req resetPasswordRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.Error(err.Error()))
+		return
+	}
+
+	if errs := r.cv.ValidateStruct(req); errs != nil {
+		c.JSON(http.StatusBadRequest, response.ErrorMap(errs))
+		return
+	}
+
+	err := r.as.ResetPassword(c.Request.Context(), auth.ResetPasswordInput{Email: req.Email})
+	if err != nil {
+		if errors.Is(err, svcErrs.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, response.Error(err.Error()))
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, response.ErrorInternal())
+		return
+	}
+
+	c.String(http.StatusOK, "reset password email sent successfully")
+}
+
+type recoveryPasswordRequest struct {
+	Token    string `json:"token"    validate:"required"`
+	Password string `json:"password" validate:"required,password"  minLength:"8" maxLength:"32"  example:"YourV@lidPassw0rd!"`
+}
+
+// @Summary     Recovery password
+// @Description Password recovery request
+// @Tags        auth
+// @Accept      json
+// @Produce     json
+// @Param       request body recoveryPasswordRequest true "Recovery password payload"
+// @Success     200 {string} string
+// @Failure     400 {object} response.ErrResponse
+// @Failure     500 {object} response.ErrResponse
+// @Router      /auth/recovery-password [post]
+func (r *authRoutes) recoveryPassword(c *gin.Context) {
+	var req recoveryPasswordRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.Error(err.Error()))
+		return
+	}
+
+	if errs := r.cv.ValidateStruct(req); errs != nil {
+		c.JSON(http.StatusBadRequest, response.ErrorMap(errs))
+		return
+	}
+
+	err := r.as.RecoveryPassword(c.Request.Context(), auth.RecoveryPasswordInput{
+		Token:    req.Token,
+		Password: req.Password,
+	})
+	if err != nil {
+		if errors.Is(err, svcErrs.ErrTokenIsExpired) {
+			c.JSON(http.StatusForbidden, response.Error(err.Error()))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, response.ErrorInternal())
+		return
+	}
+
+	c.String(http.StatusOK, "password updated successfully")
 }

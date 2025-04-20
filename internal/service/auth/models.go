@@ -17,7 +17,11 @@ type (
 	}
 
 	ResetPasswordInput struct {
-		Email    string
+		Email string
+	}
+
+	RecoveryPasswordInput struct {
+		Token    string
 		Password string
 	}
 )

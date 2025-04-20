@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bubalync/uni-auth/internal/entity"
+	"github.com/bubalync/uni-auth/internal/lib/email"
 	"github.com/bubalync/uni-auth/internal/lib/jwtgen"
 	"github.com/bubalync/uni-auth/internal/repo"
 	"github.com/bubalync/uni-auth/internal/repo/repoErrs"
@@ -20,6 +21,7 @@ import (
 
 const (
 	refreshKeyTemplate = "refresh:%s"
+	resetKeyTemplate   = "reset:%s"
 )
 
 type Service struct {
@@ -29,16 +31,26 @@ type Service struct {
 	hasher          hasher.PasswordHasher
 	tokenGenerator  jwtgen.TokenGenerator
 	refreshTokenTTL time.Duration
+	emailSender     email.Sender
 }
 
 // New -.
-func New(log *slog.Logger, cache redis.Cache, userRepo repo.User, hasher hasher.PasswordHasher, tokenGenerator jwtgen.TokenGenerator, refreshTokenTTL time.Duration) *Service {
+func New(
+	log *slog.Logger,
+	cache redis.Cache,
+	userRepo repo.User,
+	hasher hasher.PasswordHasher,
+	tokenGenerator jwtgen.TokenGenerator,
+	emailSender email.Sender,
+	refreshTokenTTL time.Duration,
+) *Service {
 	return &Service{
 		log:             log,
 		cache:           cache,
 		userRepo:        userRepo,
 		hasher:          hasher,
 		tokenGenerator:  tokenGenerator,
+		emailSender:     emailSender,
 		refreshTokenTTL: refreshTokenTTL,
 	}
 }
@@ -152,8 +164,63 @@ func (s *Service) generateTokens(ctx context.Context, log *slog.Logger, user ent
 }
 
 func (s *Service) ResetPassword(ctx context.Context, input ResetPasswordInput) error {
-	//TODO implement me
-	panic("implement me")
+	const op = "service.auth.ResetPassword"
+	log := s.log.With(slog.String("op", op))
+
+	isExists, err := s.userRepo.UserByEmailIsExists(ctx, input.Email)
+	if err != nil {
+		log.Error("failed to get user from db", sl.Err(err))
+		return svcErrs.ErrCannotGetUser
+	}
+
+	if !*isExists {
+		return svcErrs.ErrUserNotFound
+	}
+
+	// todo think about generating a token
+	token := uuid.New().String() + uuid.New().String() + uuid.New().String()
+
+	if err := s.cache.Set(ctx, fmt.Sprintf(resetKeyTemplate, token), input.Email, 15*time.Minute); err != nil {
+		log.Error("failed to save the reset password token to cache", sl.Err(err))
+		return svcErrs.ErrAccessToCache
+	}
+
+	if err := s.emailSender.SendResetPasswordEmail(input.Email, token); err != nil {
+		log.Error("failed to send the reset password email", sl.Err(err))
+		return svcErrs.ErrSendResetPasswordEmail
+	}
+
+	return nil
+}
+
+func (s *Service) RecoveryPassword(ctx context.Context, input RecoveryPasswordInput) error {
+	const op = "service.auth.RecoveryPassword"
+	log := s.log.With(slog.String("op", op))
+
+	userEmail, err := s.cache.Get(ctx, fmt.Sprintf(resetKeyTemplate, input.Token))
+	if err != nil {
+		log.Error("failed to get the reset token", sl.Err(err))
+		return svcErrs.ErrTokenIsExpired
+	}
+
+	pwd, err := s.hasher.Hash(input.Password)
+	if err != nil {
+		log.Error("failed to generate hashed password", sl.Err(err))
+		return svcErrs.ErrCannotUpdateUser
+	}
+
+	err = s.userRepo.UpdatePassword(ctx, userEmail, pwd)
+	if err != nil {
+		log.Error("failed to update password", sl.Err(err))
+		return svcErrs.ErrCannotUpdateUser
+	}
+
+	err = s.cache.Delete(ctx, fmt.Sprintf(resetKeyTemplate, input.Token))
+	if err != nil {
+		log.Error("failed to delete token from cache", sl.Err(err))
+	}
+
+	return nil
 }
 
 func (s *Service) ParseToken(token string) (*jwtgen.Claims, error) {

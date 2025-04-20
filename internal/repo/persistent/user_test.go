@@ -366,3 +366,73 @@ func TestUserRepo_UpdateLastLoginAttempt(t *testing.T) {
 		})
 	}
 }
+
+func TestUserRepo_UpdatePassword(t *testing.T) {
+	type args struct {
+		ctx      context.Context
+		email    string
+		password []byte
+	}
+
+	type MockBehavior func(m pgxmock.PgxPoolIface, args args)
+
+	testCases := []struct {
+		name         string
+		args         args
+		mockBehavior MockBehavior
+		wantErr      bool
+	}{
+		{
+			name: "OK",
+			args: args{
+				ctx:      context.Background(),
+				email:    "test@example.com",
+				password: []byte("Qwerty!"),
+			},
+			mockBehavior: func(m pgxmock.PgxPoolIface, args args) {
+				m.ExpectExec("UPDATE users").
+					WithArgs(args.password, args.email).
+					WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+			},
+			wantErr: false,
+		},
+		{
+			name: "unexpected error",
+			args: args{
+				ctx:      context.Background(),
+				email:    "test@example.com",
+				password: []byte("Qwerty!"),
+			},
+			mockBehavior: func(m pgxmock.PgxPoolIface, args args) {
+				m.ExpectExec("UPDATE users").
+					WithArgs(args.email, args.password).
+					WillReturnError(errors.New("some error"))
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			poolMock, _ := pgxmock.NewPool()
+			defer poolMock.Close()
+			tc.mockBehavior(poolMock, tc.args)
+
+			postgresMock := &postgres.Postgres{
+				Builder: squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar),
+				Pool:    poolMock,
+			}
+			userRepoMock := NewUserRepo(postgresMock)
+
+			err := userRepoMock.UpdatePassword(tc.args.ctx, tc.args.email, tc.args.password)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+
+			err = poolMock.ExpectationsWereMet()
+			assert.NoError(t, err)
+		})
+	}
+}

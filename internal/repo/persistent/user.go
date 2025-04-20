@@ -50,9 +50,21 @@ func (r *UserRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	panic("implement me")
 }
 
-func (r *UserRepo) ResetPassword(ctx context.Context, passwordHash []byte) error {
-	//TODO implement me
-	panic("implement me")
+func (r *UserRepo) UpdatePassword(ctx context.Context, email string, password []byte) error {
+	const op = "repo.persistent.user.UpdatePassword"
+
+	sql, args, _ := r.Builder.
+		Update("users").
+		Set("password_hash", password).
+		Where("email = ?", email).
+		ToSql()
+
+	_, err := r.Pool.Exec(ctx, sql, args...)
+	if err != nil {
+		return fmt.Errorf("%s: r.Pool.Exec: %w", op, err)
+	}
+
+	return nil
 }
 
 func (r *UserRepo) Update(ctx context.Context, u entity.User) error {

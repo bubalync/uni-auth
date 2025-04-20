@@ -7,6 +7,19 @@ definitions:
           type: string
         type: object
     type: object
+  v1.recoveryPasswordRequest:
+    properties:
+      password:
+        example: YourV@lidPassw0rd!
+        maxLength: 32
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - password
+    - token
+    type: object
   v1.refreshRequest:
     properties:
       token:
@@ -21,6 +34,13 @@ definitions:
         type: string
       refresh_token:
         type: string
+    type: object
+  v1.resetPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
     type: object
   v1.signInRequest:
     properties:
@@ -74,6 +94,36 @@ info:
   title: Universal authorization service API
   version: "1.0"
 paths:
+  /auth/recovery-password:
+    post:
+      consumes:
+      - application/json
+      description: Password recovery request
+      parameters:
+      - description: Recovery password payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.recoveryPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+      summary: Recovery password
+      tags:
+      - auth
   /auth/refresh:
     post:
       consumes:
@@ -106,6 +156,36 @@ paths:
           schema:
             $ref: '#/definitions/response.ErrResponse'
       summary: Refresh tokens
+      tags:
+      - auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Password reset request
+      parameters:
+      - description: Reset password payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.resetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+      summary: Reset password
       tags:
       - auth
   /auth/sign-in:

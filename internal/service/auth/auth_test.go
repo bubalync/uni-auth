@@ -24,6 +24,10 @@ const (
 	refreshTokenTTL = time.Minute
 )
 
+func boolPointer(b bool) *bool {
+	return &b
+}
+
 type partialUserMatcher struct {
 	Email        string
 	PasswordHash []byte
@@ -154,7 +158,7 @@ func TestAuthService_CreateUser(t *testing.T) {
 			log := logger.New("local", "info")
 
 			// init service
-			s := New(log, nil, repo, hasher, nil, refreshTokenTTL)
+			s := New(log, nil, repo, hasher, nil, nil, refreshTokenTTL)
 
 			// run test
 			got, err := s.CreateUser(tc.args.ctx, tc.args.input)
@@ -345,7 +349,7 @@ func TestAuthService_GenerateToken(t *testing.T) {
 			log := logger.New("local", "info")
 
 			// init service
-			s := New(log, cache, repo, hasher, tokenGenerator, refreshTokenTTL)
+			s := New(log, cache, repo, hasher, tokenGenerator, nil, refreshTokenTTL)
 
 			// run test
 			got, err := s.GenerateToken(tc.args.ctx, tc.args.input)
@@ -422,7 +426,7 @@ func TestAuthService_ParseToken(t *testing.T) {
 			log := logger.New("local", "info")
 
 			// init service
-			s := New(log, cache, repo, hasher, tokenGenerator, refreshTokenTTL)
+			s := New(log, cache, repo, hasher, tokenGenerator, nil, refreshTokenTTL)
 
 			// run test
 			got, err := s.ParseToken(tc.args.token)
@@ -592,7 +596,7 @@ func TestAuthService_Refresh(t *testing.T) {
 			log := logger.New("local", "info")
 
 			// init service
-			s := New(log, cache, repo, hasher, tokenGenerator, refreshTokenTTL)
+			s := New(log, cache, repo, hasher, tokenGenerator, nil, refreshTokenTTL)
 
 			// run test
 			got, err := s.Refresh(tc.args.ctx, tc.args.token)
@@ -606,6 +610,239 @@ func TestAuthService_Refresh(t *testing.T) {
 			assert.NotNil(t, got)
 			assert.NotEqual(t, "", got.AccessToken)
 			assert.NotEqual(t, "", got.RefreshToken)
+		})
+	}
+}
+
+func TestAuthService_ResetPassword(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		input ResetPasswordInput
+	}
+
+	type MockBehavior func(r *repomocks.MockUser, c *redismocks.MockCache, s *utilmocks.MockSender, args args)
+
+	testCases := []struct {
+		name         string
+		args         args
+		mockBehavior MockBehavior
+		wantErr      bool
+		err          error
+	}{
+		{
+			name: "OK",
+			args: args{
+				ctx:   context.Background(),
+				input: ResetPasswordInput{Email: "test@example.com"},
+			},
+			mockBehavior: func(r *repomocks.MockUser, c *redismocks.MockCache, s *utilmocks.MockSender, args args) {
+				r.EXPECT().UserByEmailIsExists(args.ctx, args.input.Email).Return(boolPointer(true), nil)
+				c.EXPECT().Set(args.ctx, gomock.Any(), args.input.Email, 15*time.Minute).Return(nil)
+				s.EXPECT().SendResetPasswordEmail(args.input.Email, gomock.Any()).Return(nil)
+			},
+			wantErr: false,
+			err:     nil,
+		},
+		{
+			name: "user not found error",
+			args: args{
+				ctx:   context.Background(),
+				input: ResetPasswordInput{Email: "test@example.com"},
+			},
+			mockBehavior: func(r *repomocks.MockUser, c *redismocks.MockCache, s *utilmocks.MockSender, args args) {
+				r.EXPECT().UserByEmailIsExists(args.ctx, args.input.Email).Return(boolPointer(false), nil)
+			},
+			wantErr: true,
+			err:     svcErrs.ErrUserNotFound,
+		},
+		{
+			name: "repo some error",
+			args: args{
+				ctx:   context.Background(),
+				input: ResetPasswordInput{Email: "test@example.com"},
+			},
+			mockBehavior: func(r *repomocks.MockUser, c *redismocks.MockCache, s *utilmocks.MockSender, args args) {
+				r.EXPECT().UserByEmailIsExists(args.ctx, args.input.Email).Return(nil, errors.New("some error"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrCannotGetUser,
+		},
+		{
+			name: "save to cache error",
+			args: args{
+				ctx:   context.Background(),
+				input: ResetPasswordInput{Email: "test@example.com"},
+			},
+			mockBehavior: func(r *repomocks.MockUser, c *redismocks.MockCache, s *utilmocks.MockSender, args args) {
+				r.EXPECT().UserByEmailIsExists(args.ctx, args.input.Email).Return(boolPointer(true), nil)
+				c.EXPECT().Set(args.ctx, gomock.Any(), args.input.Email, 15*time.Minute).Return(errors.New("some error"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrAccessToCache,
+		},
+		{
+			name: "send email some error",
+			args: args{
+				ctx:   context.Background(),
+				input: ResetPasswordInput{Email: "test@example.com"},
+			},
+			mockBehavior: func(r *repomocks.MockUser, c *redismocks.MockCache, s *utilmocks.MockSender, args args) {
+				r.EXPECT().UserByEmailIsExists(args.ctx, args.input.Email).Return(boolPointer(true), nil)
+				c.EXPECT().Set(args.ctx, gomock.Any(), args.input.Email, 15*time.Minute).Return(nil)
+				s.EXPECT().SendResetPasswordEmail(args.input.Email, gomock.Any()).Return(errors.New("some error"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrSendResetPasswordEmail,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// init deps
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// init repo mock
+			repo := repomocks.NewMockUser(ctrl)
+			cache := redismocks.NewMockCache(ctrl)
+			sender := utilmocks.NewMockSender(ctrl)
+			tc.mockBehavior(repo, cache, sender, tc.args)
+
+			// Log
+			log := logger.New("local", "info")
+
+			// init service
+			s := New(log, cache, repo, nil, nil, sender, refreshTokenTTL)
+
+			// run test
+			err := s.ResetPassword(tc.args.ctx, tc.args.input)
+			if tc.wantErr {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tc.err)
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestAuthService_RecoveryPassword(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		input RecoveryPasswordInput
+	}
+
+	type MockBehavior func(r *repomocks.MockUser, c *redismocks.MockCache, h *utilmocks.MockPasswordHasher, args args)
+
+	testCases := []struct {
+		name         string
+		args         args
+		mockBehavior MockBehavior
+		wantErr      bool
+		err          error
+	}{
+		{
+			name: "OK",
+			args: args{
+				ctx:   context.Background(),
+				input: RecoveryPasswordInput{Token: "recovery-token", Password: "new-password"},
+			},
+			mockBehavior: func(r *repomocks.MockUser, c *redismocks.MockCache, h *utilmocks.MockPasswordHasher, args args) {
+				hash := []byte{1, 2, 3}
+				c.EXPECT().Get(args.ctx, "reset:"+args.input.Token).Return("test@example.com", nil)
+				h.EXPECT().Hash(args.input.Password).Return(hash, nil)
+				r.EXPECT().UpdatePassword(args.ctx, "test@example.com", hash).Return(nil)
+				c.EXPECT().Delete(args.ctx, "reset:"+args.input.Token).Return(nil)
+			},
+			wantErr: false,
+			err:     nil,
+		},
+		{
+			name: "token expired error",
+			args: args{
+				ctx:   context.Background(),
+				input: RecoveryPasswordInput{Token: "recovery-token", Password: "new-password"},
+			},
+			mockBehavior: func(r *repomocks.MockUser, c *redismocks.MockCache, h *utilmocks.MockPasswordHasher, args args) {
+				c.EXPECT().Get(args.ctx, "reset:"+args.input.Token).Return("", errors.New("token expired"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrTokenIsExpired,
+		},
+		{
+			name: "token expired error",
+			args: args{
+				ctx:   context.Background(),
+				input: RecoveryPasswordInput{Token: "recovery-token", Password: "new-password"},
+			},
+			mockBehavior: func(r *repomocks.MockUser, c *redismocks.MockCache, h *utilmocks.MockPasswordHasher, args args) {
+				c.EXPECT().Get(args.ctx, "reset:"+args.input.Token).Return("test@example.com", nil)
+				h.EXPECT().Hash(args.input.Password).Return(nil, errors.New("some error"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrCannotUpdateUser,
+		},
+		{
+			name: "repo update password error",
+			args: args{
+				ctx:   context.Background(),
+				input: RecoveryPasswordInput{Token: "recovery-token", Password: "new-password"},
+			},
+			mockBehavior: func(r *repomocks.MockUser, c *redismocks.MockCache, h *utilmocks.MockPasswordHasher, args args) {
+				hash := []byte{1, 2, 3}
+				c.EXPECT().Get(args.ctx, "reset:"+args.input.Token).Return("test@example.com", nil)
+				h.EXPECT().Hash(args.input.Password).Return(hash, nil)
+				r.EXPECT().UpdatePassword(args.ctx, "test@example.com", hash).Return(errors.New("some error"))
+			},
+			wantErr: true,
+			err:     svcErrs.ErrCannotUpdateUser,
+		},
+		{
+			name: "ok with error delete from cache",
+			args: args{
+				ctx:   context.Background(),
+				input: RecoveryPasswordInput{Token: "recovery-token", Password: "new-password"},
+			},
+			mockBehavior: func(r *repomocks.MockUser, c *redismocks.MockCache, h *utilmocks.MockPasswordHasher, args args) {
+				hash := []byte{1, 2, 3}
+				c.EXPECT().Get(args.ctx, "reset:"+args.input.Token).Return("test@example.com", nil)
+				h.EXPECT().Hash(args.input.Password).Return(hash, nil)
+				r.EXPECT().UpdatePassword(args.ctx, "test@example.com", hash).Return(nil)
+				c.EXPECT().Delete(args.ctx, "reset:"+args.input.Token).Return(errors.New("some error"))
+			},
+			wantErr: false,
+			err:     nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// init deps
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// init repo mock
+			repo := repomocks.NewMockUser(ctrl)
+			cache := redismocks.NewMockCache(ctrl)
+			hasher := utilmocks.NewMockPasswordHasher(ctrl)
+			tc.mockBehavior(repo, cache, hasher, tc.args)
+
+			// Log
+			log := logger.New("local", "info")
+
+			// init service
+			s := New(log, cache, repo, hasher, nil, nil, refreshTokenTTL)
+
+			// run test
+			err := s.RecoveryPassword(tc.args.ctx, tc.args.input)
+			if tc.wantErr {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, tc.err)
+				return
+			}
+
+			assert.NoError(t, err)
 		})
 	}
 }

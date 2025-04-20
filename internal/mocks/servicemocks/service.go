@@ -89,6 +89,20 @@ func (mr *MockAuthMockRecorder) ParseToken(token any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseToken", reflect.TypeOf((*MockAuth)(nil).ParseToken), token)
 }
 
+// RecoveryPassword mocks base method.
+func (m *MockAuth) RecoveryPassword(ctx context.Context, input auth.RecoveryPasswordInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RecoveryPassword", ctx, input)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecoveryPassword indicates an expected call of RecoveryPassword.
+func (mr *MockAuthMockRecorder) RecoveryPassword(ctx, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecoveryPassword", reflect.TypeOf((*MockAuth)(nil).RecoveryPassword), ctx, input)
+}
+
 // Refresh mocks base method.
 func (m *MockAuth) Refresh(ctx context.Context, token string) (auth.GenerateTokenOutput, error) {
 	m.ctrl.T.Helper()
