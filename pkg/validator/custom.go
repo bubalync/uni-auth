@@ -56,9 +56,9 @@ func parseErrors(err error) map[string]string {
 		field := err.Field()
 		switch err.Tag() {
 		case "required":
-			errors[field] = fmt.Sprintf("%s is a required", field)
+			errors[field] = "Is a required"
 		case "email":
-			errors[field] = fmt.Sprintf("'%s' is not a valid email format", err.Field())
+			errors[field] = fmt.Sprintf("Invalid email format")
 		case "password":
 			errors[field] = fmt.Sprintf(
 				"%s must be between %d and %d in length"+
@@ -74,11 +74,11 @@ func parseErrors(err error) map[string]string {
 				passwordMinSymbol,
 			)
 		case "min":
-			errors[field] = fmt.Sprintf("'%s' must be longer than %s", err.Field(), err.Param())
+			errors[field] = fmt.Sprintf("Must be longer than %s", err.Param())
 		case "max":
-			errors[field] = fmt.Sprintf("'%s' must be shorter than %s", err.Field(), err.Param())
+			errors[field] = fmt.Sprintf("Must be shorter than %s", err.Param())
 		default:
-			errors[field] = fmt.Sprintf("'%s' is not valid", err.Field())
+			errors[field] = "Is not valid"
 		}
 	}
 

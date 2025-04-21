@@ -56,7 +56,7 @@ func TestAuthRoutes_SignUp(t *testing.T) {
 			inputBody:        `{"email": "test@example.com"}`,
 			mockBehaviour:    func(m *servicemocks.MockAuth, args args) {},
 			wantStatusCode:   400,
-			wantResponseBody: `{"errors":{"Password":"Password is a required"}}`,
+			wantResponseBody: `{"errors":{"Password":"Is a required"}}`,
 		},
 		{
 			name:             "Invalid password: too short",
@@ -112,7 +112,7 @@ func TestAuthRoutes_SignUp(t *testing.T) {
 			inputBody:        `{"password":"Qwerty!1"}`,
 			mockBehaviour:    func(m *servicemocks.MockAuth, args args) {},
 			wantStatusCode:   400,
-			wantResponseBody: `{"errors":{"Email":"Email is a required"}}`,
+			wantResponseBody: `{"errors":{"Email":"Is a required"}}`,
 		},
 		{
 			name: "Invalid email: too long",
@@ -122,7 +122,7 @@ func TestAuthRoutes_SignUp(t *testing.T) {
 				`sttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest@e.com","password":"Qwerty!1"}`,
 			mockBehaviour:    func(m *servicemocks.MockAuth, args args) {},
 			wantStatusCode:   400,
-			wantResponseBody: `{"errors":{"Email":"'Email' must be shorter than 150"}}`,
+			wantResponseBody: `{"errors":{"Email":"Must be shorter than 150"}}`,
 		},
 		{
 			name: "Auth service error: already exists",
@@ -230,7 +230,7 @@ func TestAuthRoutes_SignIn(t *testing.T) {
 			inputBody:        `{"email": "test@example.com"}`,
 			mockBehaviour:    func(m *servicemocks.MockAuth, args args) {},
 			wantStatusCode:   400,
-			wantResponseBody: `{"errors":{"Password":"Password is a required"}}`,
+			wantResponseBody: `{"errors":{"Password":"Is a required"}}`,
 		},
 		{
 			name:             "Invalid email: not provided",
@@ -238,7 +238,7 @@ func TestAuthRoutes_SignIn(t *testing.T) {
 			inputBody:        `{"password":"Qwerty!1"}`,
 			mockBehaviour:    func(m *servicemocks.MockAuth, args args) {},
 			wantStatusCode:   400,
-			wantResponseBody: `{"errors":{"Email":"Email is a required"}}`,
+			wantResponseBody: `{"errors":{"Email":"Is a required"}}`,
 		},
 		{
 			name: "Invalid email: too long",
@@ -248,7 +248,7 @@ func TestAuthRoutes_SignIn(t *testing.T) {
 				`sttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest@e.com","password":"Qwerty!1"}`,
 			mockBehaviour:    func(m *servicemocks.MockAuth, args args) {},
 			wantStatusCode:   400,
-			wantResponseBody: `{"errors":{"Email":"'Email' must be shorter than 150"}}`,
+			wantResponseBody: `{"errors":{"Email":"Must be shorter than 150"}}`,
 		},
 		{
 			name: "Auth service error: invalid credentials",
@@ -353,7 +353,7 @@ func TestAuthRoutes_Refresh(t *testing.T) {
 			inputBody:        `{"token": ""}`,
 			mockBehaviour:    func(m *servicemocks.MockAuth, args args) {},
 			wantStatusCode:   400,
-			wantResponseBody: `{"errors":{"Token":"Token is a required"}}`,
+			wantResponseBody: `{"errors":{"Token":"Is a required"}}`,
 		},
 		{
 			name: "Auth service error: invalid token",
@@ -464,7 +464,7 @@ func TestAuthRoutes_ResetPassword(t *testing.T) {
 			inputBody:        `{"email":""}`,
 			mockBehaviour:    func(m *servicemocks.MockAuth, args args) {},
 			wantStatusCode:   400,
-			wantResponseBody: `{"errors":{"Email":"Email is a required"}}`,
+			wantResponseBody: `{"errors":{"Email":"Is a required"}}`,
 		},
 		{
 			name:      "Auth service error: invalid email",
@@ -473,7 +473,7 @@ func TestAuthRoutes_ResetPassword(t *testing.T) {
 			mockBehaviour: func(m *servicemocks.MockAuth, args args) {
 			},
 			wantStatusCode:   400,
-			wantResponseBody: `{"errors":{"Email":"'Email' is not a valid email format"}}`,
+			wantResponseBody: `{"errors":{"Email":"Invalid email format"}}`,
 		},
 		{
 			name: "Auth service error: user not found",
