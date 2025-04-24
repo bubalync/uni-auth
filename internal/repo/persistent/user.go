@@ -140,7 +140,32 @@ func (r *UserRepo) UserByEmailIsExists(ctx context.Context, email string) (*bool
 	return &isExists, nil
 }
 
-func (r *UserRepo) UserByID(ctx context.Context, id uuid.UUID) (entity.User, error) {
-	//TODO implement me
-	panic("implement me")
+func (r *UserRepo) UserById(ctx context.Context, id uuid.UUID) (entity.User, error) {
+	const op = "repo.persistent.user.UserById"
+
+	sql, args, _ := r.Builder.
+		Select("id, email, password_hash, name, is_active, last_login_attempt, created_at, updated_at").
+		From("users").
+		Where("id = ?", id).
+		ToSql()
+
+	var user entity.User
+	err := r.Pool.QueryRow(ctx, sql, args...).Scan(
+		&user.Id,
+		&user.Email,
+		&user.PasswordHash,
+		&user.Name,
+		&user.IsActive,
+		&user.LastLoginAttempt,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return entity.User{}, repoErrs.ErrNotFound
+		}
+		return entity.User{}, fmt.Errorf("%s: r.Pool.QueryRow: %w", op, err)
+	}
+
+	return user, nil
 }

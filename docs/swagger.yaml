@@ -1,5 +1,19 @@
-basePath: /
 definitions:
+  entity.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
   response.ErrResponse:
     properties:
       errors:
@@ -94,6 +108,62 @@ info:
   title: Universal authorization service API
   version: "1.0"
 paths:
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      description: Get information about the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: Current user info
+      tags:
+      - users
+  /api/v1/users/{user_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get information about user by id
+      parameters:
+      - description: User id (UUID)
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrResponse'
+      security:
+      - BearerAuth: []
+      summary: User info by id
+      tags:
+      - users
   /auth/recovery-password:
     post:
       consumes:
@@ -256,4 +326,9 @@ paths:
       summary: Sign up
       tags:
       - auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

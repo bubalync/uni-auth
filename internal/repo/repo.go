@@ -17,7 +17,7 @@ type (
 		UpdateLastLoginAttempt(ctx context.Context, id uuid.UUID) error
 		UserByEmail(ctx context.Context, email string) (entity.User, error)
 		UserByEmailIsExists(ctx context.Context, email string) (*bool, error)
-		UserByID(ctx context.Context, id uuid.UUID) (entity.User, error)
+		UserById(ctx context.Context, id uuid.UUID) (entity.User, error)
 	}
 )
 

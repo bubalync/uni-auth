@@ -16,12 +16,16 @@ import (
 
 // NewRouter -.
 // Swagger spec:
-//
-//	@title			Universal authorization service API
-//	@description	Authorization, registration, etc...
-//	@version		1.0
-//	@host			localhost:8080
-//	@BasePath		/
+// @title                        Universal authorization service API
+// @description                  Authorization, registration, etc...
+// @version                      1.0
+// @host                         localhost:8080
+// @securityDefinitions.apikey   BearerAuth
+// @scheme                       bearer
+// @bearerFormat                 JWT
+// @in                           header
+// @name                         Authorization
+// @BasePath                     /
 func NewRouter(handler *gin.Engine, cfg *config.Config, log *slog.Logger, services *service.Services) {
 	// Middleware
 	handler.Use(gin.Recovery())

@@ -30,7 +30,7 @@ type (
 		Logout(ctx context.Context, u entity.User) error
 		Update(ctx context.Context, u entity.User) error
 		UserByEmail(ctx context.Context, email string) (entity.User, error)
-		UserByID(ctx context.Context, id uuid.UUID) (entity.User, error)
+		UserById(ctx context.Context, id uuid.UUID) (entity.User, error)
 	}
 )
 

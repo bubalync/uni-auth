@@ -213,17 +213,17 @@ func (mr *MockUserMockRecorder) UserByEmail(ctx, email any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserByEmail", reflect.TypeOf((*MockUser)(nil).UserByEmail), ctx, email)
 }
 
-// UserByID mocks base method.
-func (m *MockUser) UserByID(ctx context.Context, id uuid.UUID) (entity.User, error) {
+// UserById mocks base method.
+func (m *MockUser) UserById(ctx context.Context, id uuid.UUID) (entity.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UserByID", ctx, id)
+	ret := m.ctrl.Call(m, "UserById", ctx, id)
 	ret0, _ := ret[0].(entity.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UserByID indicates an expected call of UserByID.
-func (mr *MockUserMockRecorder) UserByID(ctx, id any) *gomock.Call {
+// UserById indicates an expected call of UserById.
+func (mr *MockUserMockRecorder) UserById(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserByID", reflect.TypeOf((*MockUser)(nil).UserByID), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserById", reflect.TypeOf((*MockUser)(nil).UserById), ctx, id)
 }
